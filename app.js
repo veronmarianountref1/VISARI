@@ -1,5 +1,23 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc, 
+  getDoc, 
+  setDoc 
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  updateProfile 
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 
 // Configuración oficial de Firebase
 const firebaseConfig = {
@@ -12,11 +30,15 @@ const firebaseConfig = {
   measurementId: "G-CGXW6Z2WWN"
 };
 
-// Inicializar Firebase y Firestore
+// Inicializar Firebase, Firestore y Auth
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-console.log("¡VISARi conectado a Firebase con éxito!");
+console.log("¡VISARi conectado a Firebase & Auth con éxito!");
+
 /**
  * VISARi - Visualización Interactiva del Rendimiento Académico
  * Core State & Reactivity Engine
@@ -25,14 +47,15 @@ console.log("¡VISARi conectado a Firebase con éxito!");
 // Initial Seed Data for Instant Realistic Presentation
 const DEMO_DATA = {
   user: {
-    name: "Veron Mariano",
-    email: "veronmarianountref1@gmail.com",
-    avatar: "RETRATO MARIANO.png",
+    uid: null,
+    name: "Estudiante",
+    email: "",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
     country: "Argentina",
     university: "UNTREF VIRTUAL",
     career: "Licenciatura en Producción Audiovisual",
-    phone: "+54 3624540593",
-    isAuthenticated: true
+    phone: "",
+    isAuthenticated: false
   },
   subjects: [
     {
@@ -170,7 +193,9 @@ class VisariStore {
     try {
       const saved = localStorage.getItem(this.storageKey);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (!parsed.user) parsed.user = { ...DEMO_DATA.user };
+        return parsed;
       }
     } catch (e) {
       console.warn("Could not load from localStorage:", e);
@@ -188,7 +213,19 @@ class VisariStore {
   }
 
   resetToDemo() {
+    const prevAuth = this.state.user && this.state.user.isAuthenticated;
+    const prevUser = this.state.user;
     this.state = JSON.parse(JSON.stringify(DEMO_DATA));
+    if (prevAuth && prevUser && prevUser.uid) {
+      // Preserve the authenticated Firebase user profile
+      this.state.user = { ...prevUser };
+    } else {
+      // Demo guest mode
+      this.state.user.name = "Veron Mariano (Demo)";
+      this.state.user.email = "veronmarianountref1@gmail.com";
+      this.state.user.avatar = "RETRATO MARIANO.png";
+      this.state.user.isAuthenticated = true;
+    }
     this.saveState();
     this.showToast("🪄 ¡Datos demo cargados con éxito! 4 materias, tareas y horas listas para explorar.");
     this.triggerConfetti();
@@ -435,7 +472,8 @@ window.appStore = new VisariStore();
 class VisariApp {
   constructor() {
     this.store = window.appStore;
-    this.currentView = 'dashboard'; // 'landing', 'dashboard', 'materias', 'timer', 'calendar', 'team', 'profile'
+    this.currentView = 'landing'; // Starts on landing until onAuthStateChanged validates session
+    this.authMode = 'login'; // 'login' | 'register'
     this.selectedSubjectDetail = null;
     this.currentCalendarDate = new Date();
     this.timerTicker = null;
@@ -444,17 +482,13 @@ class VisariApp {
   }
 
   init() {
-    // If not authenticated, start on landing
-    if (!this.store.state.user.isAuthenticated) {
-      this.currentView = 'landing';
-    }
-
     // Subscribe to store updates
     this.store.subscribe(() => {
       this.render();
     });
 
     this.setupGlobalEvents();
+    this.setupFirebaseAuth();
     this.render();
   }
 
@@ -476,7 +510,277 @@ class VisariApp {
     }
   }
 
+  // ==========================================
+  // FIREBASE AUTHENTICATION & STATE ENGINE
+  // ==========================================
+  setupFirebaseAuth() {
+    onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        console.log("Firebase Auth State Changed: User Active", firebaseUser.email);
+        await this.handleUserAuthenticated(firebaseUser);
+      } else {
+        console.log("Firebase Auth State Changed: No User Active");
+        this.handleUserSignedOut();
+      }
+    });
+  }
+
+  async handleUserAuthenticated(firebaseUser) {
+    let profileData = null;
+
+    // Load or initialize user profile in Firestore
+    try {
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const userSnap = await getDoc(userDocRef);
+
+      if (userSnap.exists()) {
+        profileData = userSnap.data();
+      } else {
+        profileData = {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : "Estudiante"),
+          email: firebaseUser.email || "",
+          avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email || 'Estudiante')}&background=7c3aed&color=fff`,
+          country: this.store.state.user.country || "Argentina",
+          university: this.store.state.user.university || "UNTREF VIRTUAL",
+          career: this.store.state.user.career || "Licenciatura en Producción Audiovisual",
+          phone: this.store.state.user.phone || "",
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(userDocRef, profileData, { merge: true });
+      }
+    } catch (err) {
+      console.warn("Firestore access info (falling back to Auth profile):", err);
+    }
+
+    const realName = (profileData && profileData.name) || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : "Estudiante");
+    const realEmail = firebaseUser.email || (profileData && profileData.email) || "";
+    const realAvatar = (profileData && profileData.avatar) || firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(realName)}&background=7c3aed&color=fff`;
+
+    this.store.state.user = {
+      ...this.store.state.user,
+      ...(profileData || {}),
+      uid: firebaseUser.uid,
+      name: realName,
+      email: realEmail,
+      avatar: realAvatar,
+      isAuthenticated: true
+    };
+    this.store.saveState();
+
+    if (this.currentView === 'landing') {
+      this.currentView = 'dashboard';
+    }
+    this.render();
+  }
+
+  handleUserSignedOut() {
+    this.store.state.user.isAuthenticated = false;
+    this.store.state.user.uid = null;
+    this.store.state.user.email = "";
+    this.store.saveState();
+
+    this.currentView = 'landing';
+    this.render();
+  }
+
+  async loginWithGoogle() {
+    this.setAuthLoading(true);
+    this.hideAuthAlert();
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      this.store.showToast(`✅ ¡Bienvenido/a, ${user.displayName || user.email}!`);
+    } catch (error) {
+      console.error("Error al iniciar sesión con Google:", error);
+      this.showAuthError(this.mapAuthError(error.code));
+    } finally {
+      this.setAuthLoading(false);
+    }
+  }
+
+  async loginWithEmail(email, password) {
+    this.setAuthLoading(true);
+    this.hideAuthAlert();
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      this.store.showToast(`✅ ¡Bienvenido/a, ${user.displayName || user.email}!`);
+    } catch (error) {
+      console.error("Error al iniciar sesión con correo:", error);
+      this.showAuthError(this.mapAuthError(error.code));
+    } finally {
+      this.setAuthLoading(false);
+    }
+  }
+
+  async registerWithEmail(name, email, password) {
+    this.setAuthLoading(true);
+    this.hideAuthAlert();
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const chosenName = name.trim() || email.split('@')[0];
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(chosenName)}&background=7c3aed&color=fff`;
+
+      try {
+        await updateProfile(user, {
+          displayName: chosenName,
+          photoURL: avatarUrl
+        });
+      } catch (profErr) {
+        console.warn("Could not set displayName on Auth user:", profErr);
+      }
+
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          name: chosenName,
+          email: email,
+          avatar: avatarUrl,
+          country: "Argentina",
+          university: "UNTREF VIRTUAL",
+          career: "Licenciatura en Producción Audiovisual",
+          phone: "",
+          createdAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (storeErr) {
+        console.warn("Firestore setDoc on registration:", storeErr);
+      }
+
+      this.store.showToast(`🎉 ¡Cuenta creada con éxito! Bienvenido/a a VISARi, ${chosenName}`);
+    } catch (error) {
+      console.error("Error al registrar cuenta:", error);
+      this.showAuthError(this.mapAuthError(error.code));
+    } finally {
+      this.setAuthLoading(false);
+    }
+  }
+
+  async logout() {
+    try {
+      await signOut(auth);
+      this.store.state.user.isAuthenticated = false;
+      this.store.state.user.uid = null;
+      this.store.state.user.email = "";
+      this.store.saveState();
+      this.navigateTo('landing');
+      this.store.showToast("👋 Has cerrado sesión correctamente.");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      this.store.showToast("Error al cerrar sesión: " + error.message);
+    }
+  }
+
+  mapAuthError(code) {
+    switch (code) {
+      case 'auth/invalid-email':
+        return 'El formato del correo electrónico no es válido.';
+      case 'auth/user-disabled':
+        return 'Esta cuenta ha sido inhabilitada por el administrador.';
+      case 'auth/user-not-found':
+        return 'No existe ninguna cuenta registrada con este correo.';
+      case 'auth/wrong-password':
+        return 'La contraseña es incorrecta. Inténtalo de nuevo.';
+      case 'auth/invalid-credential':
+        return 'Credenciales inválidas. Verifica tu correo y contraseña.';
+      case 'auth/email-already-in-use':
+        return 'Ya existe una cuenta con este correo. Cambia a "Iniciar Sesión".';
+      case 'auth/weak-password':
+        return 'La contraseña es muy débil. Debe tener al menos 6 caracteres.';
+      case 'auth/popup-closed-by-user':
+        return 'Has cancelado o cerrado la ventana de inicio de Google.';
+      case 'auth/popup-blocked':
+        return 'El navegador bloqueó la ventana emergente de Google. Habilita las ventanas emergentes.';
+      case 'auth/network-request-failed':
+        return 'Error de conexión. Verifica tu conexión a Internet.';
+      case 'auth/too-many-requests':
+        return 'Demasiados intentos fallidos. Por seguridad, espera unos momentos.';
+      default:
+        return 'Error de autenticación (' + (code || 'desconocido') + '). Intenta nuevamente.';
+    }
+  }
+
+  setAuthMode(mode) {
+    this.authMode = mode;
+    const tabLogin = document.getElementById('auth-tab-login');
+    const tabRegister = document.getElementById('auth-tab-register');
+    const nameContainer = document.getElementById('auth-name-container');
+    const title = document.getElementById('auth-card-title');
+    const subtitle = document.getElementById('auth-card-subtitle');
+    const submitText = document.getElementById('auth-submit-text');
+    const pwdHint = document.getElementById('auth-pwd-hint');
+    const toggleMsg = document.getElementById('auth-toggle-msg');
+    const toggleBtn = document.getElementById('auth-toggle-btn');
+    const pwdInput = document.getElementById('auth-password');
+    const nameInput = document.getElementById('auth-name');
+
+    this.hideAuthAlert();
+
+    if (mode === 'register') {
+      if (tabLogin) tabLogin.className = 'flex-1 py-2 text-xs font-semibold rounded-xl transition duration-200 text-slate-400 hover:text-white cursor-pointer';
+      if (tabRegister) tabRegister.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition duration-200 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md cursor-pointer';
+      if (nameContainer) nameContainer.classList.remove('hidden');
+      if (nameInput) nameInput.required = true;
+      if (title) title.textContent = 'Crea tu Cuenta';
+      if (subtitle) subtitle.textContent = 'Comienza a potenciar tu rendimiento académico hoy';
+      if (submitText) submitText.textContent = 'Crear Cuenta en VISARi →';
+      if (pwdHint) pwdHint.classList.remove('hidden');
+      if (toggleMsg) toggleMsg.textContent = '¿Ya tienes una cuenta registrada?';
+      if (toggleBtn) toggleBtn.textContent = 'Inicia sesión aquí';
+      if (pwdInput) pwdInput.setAttribute('autocomplete', 'new-password');
+    } else {
+      if (tabLogin) tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition duration-200 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md cursor-pointer';
+      if (tabRegister) tabRegister.className = 'flex-1 py-2 text-xs font-semibold rounded-xl transition duration-200 text-slate-400 hover:text-white cursor-pointer';
+      if (nameContainer) nameContainer.classList.add('hidden');
+      if (nameInput) nameInput.required = false;
+      if (title) title.textContent = 'Ingresa a tu Campus';
+      if (subtitle) subtitle.textContent = 'Accede con tu cuenta institucional o Google Workspace';
+      if (submitText) submitText.textContent = 'Ingresar al Dashboard →';
+      if (pwdHint) pwdHint.classList.add('hidden');
+      if (toggleMsg) toggleMsg.textContent = '¿No tienes una cuenta aún?';
+      if (toggleBtn) toggleBtn.textContent = 'Regístrate aquí';
+      if (pwdInput) pwdInput.setAttribute('autocomplete', 'current-password');
+    }
+  }
+
+  showAuthError(message) {
+    const alertBox = document.getElementById('auth-alert');
+    const alertMsg = document.getElementById('auth-alert-message');
+    const alertIcon = document.getElementById('auth-alert-icon');
+    if (alertBox && alertMsg) {
+      alertBox.className = 'mb-4 p-3 rounded-xl text-xs font-medium border flex items-start gap-2.5 transition duration-200 bg-rose-500/15 border-rose-500/40 text-rose-300';
+      if (alertIcon) alertIcon.textContent = '⚠️';
+      alertMsg.textContent = message;
+      alertBox.classList.remove('hidden');
+    }
+  }
+
+  hideAuthAlert() {
+    const alertBox = document.getElementById('auth-alert');
+    if (alertBox) alertBox.classList.add('hidden');
+  }
+
+  setAuthLoading(isLoading) {
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const googleBtn = document.getElementById('btn-google-auth');
+    const spinner = document.getElementById('auth-submit-spinner');
+    if (submitBtn) submitBtn.disabled = isLoading;
+    if (googleBtn) googleBtn.disabled = isLoading;
+    if (spinner) {
+      if (isLoading) spinner.classList.remove('hidden');
+      else spinner.classList.add('hidden');
+    }
+  }
+
   navigateTo(view, payload = null) {
+    if (!this.store.state.user.isAuthenticated && view !== 'landing') {
+      this.currentView = 'landing';
+      this.render();
+      return;
+    }
     this.currentView = view;
     if (view === 'materia-detail' && payload) {
       this.selectedSubjectDetail = payload;
@@ -552,15 +856,19 @@ class VisariApp {
   updateShell(state) {
     // Update user info in header and sidebar
     const userNames = document.querySelectorAll('.user-display-name');
-    userNames.forEach(el => el.textContent = state.user.name);
+    userNames.forEach(el => el.textContent = state.user.name || 'Estudiante');
 
     const userCareers = document.querySelectorAll('.user-display-career');
-    userCareers.forEach(el => el.textContent = state.user.career);
+    userCareers.forEach(el => el.textContent = state.user.career || 'Estudiante Universitario');
 
     const userAvatars = document.querySelectorAll('.user-display-avatar');
     userAvatars.forEach(el => {
       if (el.tagName === 'IMG') {
-        el.src = state.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80';
+        const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(state.user.name || 'Estudiante')}&background=7c3aed&color=fff`;
+        el.src = state.user.avatar || fallbackUrl;
+        el.onerror = () => {
+          el.src = fallbackUrl;
+        };
       }
     });
 
@@ -598,22 +906,50 @@ class VisariApp {
   renderLanding() {
     const form = document.getElementById('auth-form');
     if (form) {
-      form.onsubmit = (e) => {
+      form.onsubmit = async (e) => {
         e.preventDefault();
-        this.store.state.user.isAuthenticated = true;
-        this.store.saveState();
-        this.navigateTo('dashboard');
-        this.store.showToast("👋 ¡Bienvenida de nuevo, " + this.store.state.user.name + "!");
+        const emailInput = document.getElementById('auth-email');
+        const pwdInput = document.getElementById('auth-password');
+        const nameInput = document.getElementById('auth-name');
+
+        const email = emailInput ? emailInput.value.trim() : '';
+        const password = pwdInput ? pwdInput.value : '';
+        const name = nameInput ? nameInput.value.trim() : '';
+
+        if (!email || !password) {
+          this.showAuthError('Por favor completa todos los campos requeridos.');
+          return;
+        }
+
+        if (this.authMode === 'register') {
+          await this.registerWithEmail(name, email, password);
+        } else {
+          await this.loginWithEmail(email, password);
+        }
       };
     }
 
     const googleBtn = document.getElementById('btn-google-auth');
     if (googleBtn) {
       googleBtn.onclick = () => {
-        this.store.state.user.isAuthenticated = true;
-        this.store.saveState();
-        this.navigateTo('dashboard');
-        this.store.showToast("✅ Autenticado con Google Workspace ITBA");
+        this.loginWithGoogle();
+      };
+    }
+
+    const tabLogin = document.getElementById('auth-tab-login');
+    if (tabLogin) {
+      tabLogin.onclick = () => this.setAuthMode('login');
+    }
+
+    const tabRegister = document.getElementById('auth-tab-register');
+    if (tabRegister) {
+      tabRegister.onclick = () => this.setAuthMode('register');
+    }
+
+    const toggleBtn = document.getElementById('auth-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.onclick = () => {
+        this.setAuthMode(this.authMode === 'login' ? 'register' : 'login');
       };
     }
 
@@ -637,6 +973,7 @@ class VisariApp {
     const uniInput = document.getElementById('profile-uni');
     const careerInput = document.getElementById('profile-career');
     const phoneInput = document.getElementById('profile-phone');
+    const emailDisplay = document.getElementById('profile-email');
 
     if (nameInput) nameInput.value = user.name || '';
     if (avatarInput) avatarInput.value = user.avatar || '';
@@ -644,6 +981,7 @@ class VisariApp {
     if (uniInput) uniInput.value = user.university || '';
     if (careerInput) careerInput.value = user.career || '';
     if (phoneInput) phoneInput.value = user.phone || '';
+    if (emailDisplay) emailDisplay.textContent = user.email || 'Sin correo asociado';
 
     // Summary counters in profile
     const metrics = this.store.getGlobalMetrics();
@@ -657,14 +995,14 @@ class VisariApp {
 
     // Helper: Dynamic real-time avatar sync across the entire app (Preview, Header Top-Right, Sidebar)
     const syncAvatars = (imageUrl) => {
-      const fallback = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80';
+      const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'Estudiante')}&background=7c3aed&color=fff`;
       const targetUrl = imageUrl && imageUrl.trim() ? imageUrl.trim() : fallback;
 
       // Update preview in profile
       const previewImg = document.getElementById('profile-avatar-preview');
       if (previewImg) previewImg.src = targetUrl;
 
-      // Update all avatar instances throughout the application (header top-right, sidebar, etc.)
+      // Update all avatar instances throughout the application
       const allAvatars = document.querySelectorAll('.user-display-avatar');
       allAvatars.forEach(img => {
         if (img.tagName === 'IMG') {
@@ -678,7 +1016,6 @@ class VisariApp {
       avatarInput.oninput = (e) => {
         const val = e.target.value.trim();
         syncAvatars(val);
-        // Deselect presets if custom URL typed
         document.querySelectorAll('.avatar-preset-btn').forEach(btn => {
           if (btn.getAttribute('data-url') === val) {
             btn.classList.add('border-violet-600', 'ring-2', 'ring-violet-400');
@@ -698,7 +1035,6 @@ class VisariApp {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
 
-        // Optional size warning
         if (file.size > 3 * 1024 * 1024) {
           this.store.showToast("⚠️ La imagen seleccionada es mayor a 3MB. Se recomienda una imagen más ligera.");
         }
@@ -716,7 +1052,6 @@ class VisariApp {
             statusEl.classList.add('text-emerald-600', 'font-semibold');
           }
 
-          // Deselect preset borders
           document.querySelectorAll('.avatar-preset-btn').forEach(btn => {
             btn.classList.remove('border-violet-600', 'ring-2', 'ring-violet-400');
             btn.classList.add('border-transparent');
@@ -763,17 +1098,36 @@ class VisariApp {
     // Form submit
     const profileForm = document.getElementById('profile-form');
     if (profileForm) {
-      profileForm.onsubmit = (e) => {
+      profileForm.onsubmit = async (e) => {
         e.preventDefault();
         const newAvatar = avatarInput.value.trim() || user.avatar;
-        this.store.updateUser({
+        const updatedData = {
           name: nameInput.value.trim(),
           avatar: newAvatar,
           country: countryInput.value.trim(),
           university: uniInput.value.trim(),
           career: careerInput.value.trim(),
           phone: phoneInput.value.trim()
-        });
+        };
+        this.store.updateUser(updatedData);
+
+        // Sync with Firestore if active Firebase session
+        if (auth.currentUser) {
+          try {
+            await setDoc(doc(db, "users", auth.currentUser.uid), updatedData, { merge: true });
+          } catch (err) {
+            console.warn("Firestore error updating profile:", err);
+          }
+
+          try {
+            await updateProfile(auth.currentUser, {
+              displayName: updatedData.name,
+              photoURL: updatedData.avatar.startsWith('http') ? updatedData.avatar : null
+            });
+          } catch (err) {
+            console.warn("Firebase Auth error updating profile:", err);
+          }
+        }
       };
     }
   }
