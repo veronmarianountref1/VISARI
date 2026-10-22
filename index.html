@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VISARi - Visualización Interactiva del Rendimiento Académico</title>
+  
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN with Custom Theme Config -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              950: '#0B0F19',
+              900: '#0F172A',
+              850: '#121936',
+              800: '#1E293B',
+              700: '#334155',
+            },
+            violet: {
+              50: '#F5F3FF',
+              100: '#EDE9FE',
+              200: '#DDD6FE',
+              300: '#C4B5FD',
+              400: '#A78BFA',
+              500: '#8B5CF6',
+              600: '#7C3AED',
+              700: '#6D28D9',
+              800: '#5B21B6',
+              900: '#4C1D95',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons & Canvas Confetti -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="h-full text-slate-800 bg-[#F8FAFC] antialiased selection:bg-violet-500 selection:text-white">
+
+  <!-- ========================================================================= -->
+  <!-- 1. LANDING & AUTH SCREEN (Single Page View Toggle) -->
+  <!-- ========================================================================= -->
+  <div id="view-landing" class="min-h-screen bg-navy-950 text-white flex flex-col justify-between hidden relative overflow-hidden">
+    <!-- Subtle Background Glows -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-1/2 -right-40 w-[30rem] h-[30rem] bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Landing Navigation -->
+    <header class="max-w-7xl mx-auto w-full px-6 py-6 flex items-center justify-between relative z-10">
+      <div class="flex items-center">
+        <img src="logo-visari.png" alt="VISARi" class="w-auto h-auto object-contain transition-transform duration-200 hover:scale-[1.02]" style="max-width: 170px; height: auto;">
+      </div>
+      <div class="flex items-center gap-4">
+        <button id="btn-direct-demo" class="text-xs font-semibold text-violet-300 hover:text-white px-3 py-2 rounded-lg transition border border-violet-800/50 hover:bg-violet-900/30">
+          Acceso Rápido Demo ⚡
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero & Auth Section -->
+    <main class="max-w-7xl mx-auto w-full px-6 py-10 flex-1 grid lg:grid-cols-12 gap-12 items-center relative z-10">
+      <!-- Left Column: Copy & Value Proposition -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-950/60 border border-violet-500/30 text-violet-300 text-xs font-medium">
+          <span class="w-2 h-2 rounded-full bg-violet-400 animate-pulse"></span>
+          Inspirado en la agilidad de Linear y el foco de Notion
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight font-display leading-[1.15]">
+          Visualización Interactiva del <span class="bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-indigo-300 to-white">Rendimiento Académico</span>
+        </h1>
+
+        <p class="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed">
+          Centraliza tus materias, cronometra tus sesiones de estudio con el <strong class="text-violet-300 font-semibold">Botón B</strong>, coordina entregas en equipo y obtén métricas reactivas de tu promedio en tiempo real.
+        </p>
+
+        <!-- Feature Pills -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
+          <div class="p-3 rounded-xl bg-navy-900/70 border border-slate-800/80">
+            <div class="text-violet-400 text-xs font-bold uppercase mb-1">Métricas</div>
+            <div class="text-sm font-semibold text-white">Promedio & GPA</div>
+          </div>
+          <div class="p-3 rounded-xl bg-navy-900/70 border border-slate-800/80">
+            <div class="text-violet-400 text-xs font-bold uppercase mb-1">Enfoque</div>
+            <div class="text-sm font-semibold text-white">Botón B Timer</div>
+          </div>
+          <div class="p-3 rounded-xl bg-navy-900/70 border border-slate-800/80">
+            <div class="text-violet-400 text-xs font-bold uppercase mb-1">Agenda</div>
+            <div class="text-sm font-semibold text-white">Exámenes y TPs</div>
+          </div>
+          <div class="p-3 rounded-xl bg-navy-900/70 border border-slate-800/80">
+            <div class="text-violet-400 text-xs font-bold uppercase mb-1">Equipos</div>
+            <div class="text-sm font-semibold text-white">Kanban Grupal</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Auth Card -->
+      <div class="lg:col-span-5">
+        <div class="glass-navy p-8 rounded-3xl shadow-2xl relative">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold font-display text-white">Ingresa a tu Campus</h2>
+            <p class="text-xs text-slate-400 mt-1">Accede con tu cuenta institucional o Google Workspace</p>
+          </div>
+
+          <!-- Google Auth Button -->
+          <button id="btn-google-auth" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 font-semibold text-sm py-3 px-4 rounded-xl shadow-sm transition duration-200 mb-5">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>Continuar con Google</span>
+          </button>
+
+          <div class="relative flex items-center justify-center my-5">
+            <div class="border-t border-slate-700/80 w-full"></div>
+            <span class="bg-navy-850 px-3 text-[11px] uppercase tracking-wider text-slate-400 font-semibold absolute">o con correo</span>
+          </div>
+
+          <!-- Email/Password Form -->
+          <form id="auth-form" class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Correo Universitario</label>
+              <input type="email" required placeholder="alumno@universidad.edu" value="sofia.albarracin@itba.edu.ar" class="w-full bg-navy-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1.5">Contraseña</label>
+              <input type="password" required placeholder="••••••••" value="demo1234" class="w-full bg-navy-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition">
+            </div>
+
+            <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-sm py-3 rounded-xl shadow-lg shadow-violet-600/30 transition transform active:scale-[0.99]">
+              Ingresar al Dashboard →
+            </button>
+          </form>
+
+          <p class="text-[11px] text-center text-slate-400 mt-4">
+            Al continuar aceptas las políticas académicas y de privacidad de VISARi.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="max-w-7xl mx-auto w-full px-6 py-6 text-center text-xs text-slate-500">
+      VISARi SaaS v1.0 • Diseñado para potenciar el rendimiento universitario
+    </footer>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- 2. MAIN APPLICATION SHELL (Header + Sidebar + View Container) -->
+  <!-- ========================================================================= -->
+  <div id="app-shell" class="min-h-screen flex flex-col md:flex-row">
+    
+    <!-- SIDEBAR (Notion/Linear Inspired) -->
+    <aside class="w-full md:w-64 bg-[#0F172A] text-slate-300 flex-shrink-0 flex flex-col justify-between border-r border-slate-800 z-30">
+      <!-- Top Brand Section -->
+      <div>
+        <div class="p-5 flex items-center justify-between border-b border-slate-800/80">
+          <div class="flex items-center cursor-pointer py-1" onclick="window.visariApp.navigateTo('dashboard')" title="VISARi - Ir al Dashboard">
+            <img src="logo-visari.png" alt="VISARi" class="w-auto h-auto object-contain transition-transform duration-200 hover:scale-[1.02]" style="max-width: 160px; height: auto;">
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="p-3 space-y-1 text-sm font-medium">
+          <button data-target="dashboard" onclick="window.visariApp.navigateTo('dashboard')" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition text-left text-slate-300 hover:bg-slate-800/60">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 text-violet-400"></i>
+            <span>Dashboard General</span>
+          </button>
+
+          <button data-target="materias" onclick="window.visariApp.navigateTo('materias')" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition text-left text-slate-300 hover:bg-slate-800/60">
+            <i data-lucide="book-open" class="w-4 h-4 text-violet-400"></i>
+            <span>Módulo Materias</span>
+          </button>
+
+          <!-- HIGHLIGHTED BOTÓN B IN SIDEBAR -->
+          <button data-target="timer" onclick="window.visariApp.navigateTo('timer')" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition text-left text-slate-300 hover:bg-slate-800/60 group">
+            <div class="flex items-center gap-3">
+              <i data-lucide="timer" class="w-4 h-4 text-violet-400 group-hover:text-violet-300"></i>
+              <span>Cronómetro (Botón B)</span>
+            </div>
+            <span class="text-[10px] font-bold bg-violet-600 text-white px-2 py-0.5 rounded-full">⚡</span>
+          </button>
+
+          <button data-target="calendar" onclick="window.visariApp.navigateTo('calendar')" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition text-left text-slate-300 hover:bg-slate-800/60">
+            <i data-lucide="calendar" class="w-4 h-4 text-violet-400"></i>
+            <span>Módulo Calendario</span>
+          </button>
+
+          <button data-target="team" onclick="window.visariApp.navigateTo('team')" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition text-left text-slate-300 hover:bg-slate-800/60">
+            <i data-lucide="users-2" class="w-4 h-4 text-violet-400"></i>
+            <span>Trabajo en Equipo</span>
+          </button>
+
+          <div class="pt-4 pb-1 px-3">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ajustes & Cuenta</span>
+          </div>
+
+          <button data-target="profile" onclick="window.visariApp.navigateTo('profile')" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition text-left text-slate-300 hover:bg-slate-800/60">
+            <i data-lucide="user-cog" class="w-4 h-4 text-slate-400"></i>
+            <span>Perfil de Usuario</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Bottom User Card in Sidebar -->
+      <div class="p-4 border-t border-slate-800/80 bg-slate-900/60">
+        <div class="flex items-center gap-3 mb-3">
+          <img src="" class="user-display-avatar w-10 h-10 rounded-full object-cover border-2 border-violet-500" alt="Avatar">
+          <div class="overflow-hidden flex-1">
+            <h4 class="text-xs font-bold text-white truncate user-display-name">Usuario</h4>
+            <p class="text-[11px] text-slate-400 truncate user-display-career">Carrera</p>
+          </div>
+        </div>
+        <button onclick="window.visariApp.navigateTo('landing')" class="w-full text-center text-[11px] text-slate-400 hover:text-rose-400 font-medium py-1.5 rounded-lg border border-slate-800 hover:border-rose-900 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="log-out" class="w-3 h-3"></i>
+          <span>Cerrar Sesión / Landing</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#F8FAFC]">
+      
+      <!-- TOP NAVIGATION BAR -->
+      <header class="h-16 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+        <div class="flex items-center gap-3">
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:block">
+            Semestre Académico 2026-II
+          </div>
+        </div>
+
+        <!-- Right Header Actions: Botón B Trigger & Notifications -->
+        <div class="flex items-center gap-3">
+          <!-- Active Timer Ticker Badge (Hidden by default, shown when running) -->
+          <div id="topbar-timer-status" class="hidden items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-3 py-1 rounded-full text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+            <span id="topbar-timer-display">00:00:00</span>
+          </div>
+
+          <!-- PROMINENT HIGH-IMPACT "BOTÓN B" QUICK TRIGGER -->
+          <button id="topbar-btn-b" class="relative group flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-md shadow-violet-500/20 transition-all transform active:scale-95 animate-pulse-ring">
+            <span class="text-amber-300 font-black">⚡</span>
+            <span>Botón B (Estudiar)</span>
+          </button>
+
+          <!-- User Quick Avatar -->
+          <div class="flex items-center gap-2.5 pl-2 border-l border-slate-200 cursor-pointer" onclick="window.visariApp.navigateTo('profile')">
+            <img src="" class="user-display-avatar w-8 h-8 rounded-full object-cover border border-slate-200 shadow-sm" alt="Avatar">
+            <span class="text-xs font-bold text-slate-700 hidden md:block user-display-name">Usuario</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- VIEW PANELS CONTAINER -->
+      <main class="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+
+        <!-- ========================================================================= -->
+        <!-- VIEW: DASHBOARD GENERAL -->
+        <!-- ========================================================================= -->
+        <div id="view-dashboard" class="space-y-8">
+          <!-- Welcome Greeting Banner -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-navy-900 via-navy-850 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl relative overflow-hidden">
+            <div class="relative z-10 space-y-1.5">
+              <span class="text-xs font-bold uppercase tracking-wider text-violet-400 bg-violet-950/80 px-2.5 py-1 rounded-full border border-violet-800/40">Resumen Panorámico</span>
+              <h2 class="text-2xl sm:text-3xl font-extrabold font-display">
+                Hola, <span class="user-display-name">Estudiante</span> 👋
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-300 max-w-lg">
+                Tu progreso global está actualizado. Tienes actividades pendientes y sesiones de estudio registradas esta semana.
+              </p>
+            </div>
+            
+            <div class="relative z-10 flex gap-3">
+              <button onclick="window.visariApp.navigateTo('materias')" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl transition shadow">
+                Explorar Materias
+              </button>
+              <button onclick="window.visariApp.navigateTo('timer')" class="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl transition shadow shadow-violet-600/30">
+                Iniciar Botón B
+              </button>
+            </div>
+
+            <!-- Background subtle pattern -->
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-violet-600/10 rounded-full blur-2xl pointer-events-none"></div>
+          </div>
+
+          <!-- TOP KEY METRICS CARDS -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <!-- Card 1: Promedio General (GPA) -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Promedio General</span>
+                <span class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">⭐</span>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h3 id="dash-gpa" class="text-2xl font-extrabold text-slate-900 font-display">8.8 / 10</h3>
+                <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">+0.4</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-2">Excelente rendimiento en la carrera</p>
+            </div>
+
+            <!-- Card 2: Horas Totales Estudiadas -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Horas de Estudio</span>
+                <span class="p-2 bg-violet-50 text-violet-600 rounded-lg">⏱️</span>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h3 id="dash-hours" class="text-2xl font-extrabold text-slate-900 font-display">52h 00m</h3>
+                <span class="text-[11px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">Acumuladas</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-2">Sumadas con el Cronómetro Botón B</p>
+            </div>
+
+            <!-- Card 3: Progreso Global de Actividades -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Avance Global</span>
+                <span class="p-2 bg-blue-50 text-blue-600 rounded-lg">📊</span>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h3 id="dash-progress" class="text-lg font-extrabold text-slate-900 font-display">65% (14/22)</h3>
+              </div>
+              <!-- Realtime progress bar -->
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+                <div id="dash-progress-bar" class="h-full bg-violet-600 rounded-full transition-all duration-700" style="width: 65%"></div>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1.5">Reactivo a todas las materias</p>
+            </div>
+
+            <!-- Card 4: Próximos Exámenes -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+              <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider">Próximos Exámenes</span>
+                <span class="p-2 bg-amber-50 text-amber-600 rounded-lg">📅</span>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h3 id="dash-exams-count" class="text-xl font-extrabold text-slate-900 font-display">3 programados</h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-2">Parcial de Algoritmos en 5 días</p>
+            </div>
+          </div>
+
+          <!-- THE 4 FUNDAMENTAL SEGMENTS (Interactive Cards) -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-slate-900 font-display">Segmentos Fundamentales</h3>
+                <p class="text-xs text-slate-500">Acceso rápido y monitor en vivo a tus 4 herramientas clave</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              <!-- SEGMENT A: MÓDULO MATERIAS -->
+              <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        📚
+                      </div>
+                      <div>
+                        <h4 class="text-base font-bold text-slate-900 font-display">a) Módulo Materias</h4>
+                        <p class="text-xs text-slate-500">Gestión de entregas, foros y parciales</p>
+                      </div>
+                    </div>
+                    <button onclick="window.visariApp.navigateTo('materias')" class="text-xs font-bold text-violet-600 hover:text-violet-700">
+                      Ver Todas →
+                    </button>
+                  </div>
+
+                  <!-- Dynamic mini-list of subjects -->
+                  <div id="dash-segment-materias" class="space-y-2.5">
+                    <!-- Populated dynamically by JS -->
+                  </div>
+                </div>
+
+                <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-xs text-slate-500">El avance recalcula el dashboard automáticamente</span>
+                  <button onclick="window.visariApp.openNewSubjectModal()" class="text-xs font-semibold text-slate-700 hover:text-violet-600">
+                    + Nueva Materia
+                  </button>
+                </div>
+              </div>
+
+              <!-- SEGMENT B: CRONÓMETRO ("BOTÓN B") -->
+              <div class="bg-gradient-to-br from-navy-900 to-navy-850 text-white p-6 rounded-2xl shadow-sm flex flex-col justify-between relative overflow-hidden border border-slate-800">
+                <div class="relative z-10">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-violet-600/30 border border-violet-400/40 text-violet-300 flex items-center justify-center font-bold text-lg">
+                        ⚡
+                      </div>
+                      <div>
+                        <h4 class="text-base font-bold text-white font-display">b) Módulo Cronómetro ("Botón B")</h4>
+                        <p class="text-xs text-violet-300">Sesiones de estudio de alto impacto</p>
+                      </div>
+                    </div>
+                    <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">Acción Rápida</span>
+                  </div>
+
+                  <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+                    Cronometra tu tiempo en tiempo real. Al finalizar, asígnalo a una materia para sumar horas acumuladas.
+                  </p>
+
+                  <div class="p-4 rounded-xl bg-navy-950/80 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span class="text-[11px] text-slate-400 block font-medium">Estado actual:</span>
+                      <span id="dash-timer-status-label" class="text-sm font-bold text-white">Listo para iniciar</span>
+                    </div>
+                    <button id="dash-segment-timer-btn" class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition shadow-md shadow-violet-600/30">
+                      ⚡ Iniciar Cronómetro
+                    </button>
+                  </div>
+                </div>
+
+                <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between relative z-10">
+                  <span class="text-xs text-slate-400">Técnica Pomodoro & Cronómetro Libre</span>
+                  <button onclick="window.visariApp.navigateTo('timer')" class="text-xs font-semibold text-violet-400 hover:text-white">
+                    Abrir Pantalla Completa →
+                  </button>
+                </div>
+              </div>
+
+              <!-- SEGMENT C: MÓDULO CALENDARIO -->
+              <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                        📅
+                      </div>
+                      <div>
+                        <h4 class="text-base font-bold text-slate-900 font-display">c) Módulo Calendario</h4>
+                        <p class="text-xs text-slate-500">Consolidación automática de fechas críticas</p>
+                      </div>
+                    </div>
+                    <button onclick="window.visariApp.navigateTo('calendar')" class="text-xs font-bold text-violet-600 hover:text-violet-700">
+                      Abrir Agenda →
+                    </button>
+                  </div>
+
+                  <!-- Dynamic mini upcoming list -->
+                  <div id="dash-segment-calendar" class="space-y-2.5">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+
+                <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-xs text-slate-500">Sincronizado con las tareas de cada materia</span>
+                  <span class="text-xs font-semibold text-amber-600">Próximos 14 días</span>
+                </div>
+              </div>
+
+              <!-- SEGMENT D: TRABAJO EN EQUIPO -->
+              <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                        👥
+                      </div>
+                      <div>
+                        <h4 class="text-base font-bold text-slate-900 font-display">d) Módulo Trabajo en Equipo</h4>
+                        <p class="text-xs text-slate-500">Asignación a compañeros y Kanban grupal</p>
+                      </div>
+                    </div>
+                    <button onclick="window.visariApp.navigateTo('team')" class="text-xs font-bold text-violet-600 hover:text-violet-700">
+                      Ver Tablero →
+                    </button>
+                  </div>
+
+                  <!-- Dynamic team preview -->
+                  <div id="dash-segment-team" class="space-y-2.5">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+
+                <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-xs text-slate-500">Colaboración en tiempo real</span>
+                  <button onclick="window.visariApp.openNewTeamTaskModal()" class="text-xs font-semibold text-violet-600 hover:text-violet-700">
+                    + Asignar Tarea
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW: MÓDULO MATERIAS (GRID) -->
+        <!-- ========================================================================= -->
+        <div id="view-materias" class="space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900 font-display">Módulo Materias</h2>
+              <p class="text-xs sm:text-sm text-slate-500">Gestión reactiva de asignaturas, tareas, foros, entregas y evaluaciones</p>
+            </div>
+            <button onclick="window.visariApp.openNewSubjectModal()" class="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-2">
+              <span>+ Agregar Nueva Materia</span>
+            </button>
+          </div>
+
+          <!-- Subjects Grid Container -->
+          <div id="materias-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW: MATERIA DETALLE (DRILL-DOWN) -->
+        <!-- ========================================================================= -->
+        <div id="view-materia-detail" class="space-y-6 hidden">
+          <!-- Back button and title -->
+          <div class="flex items-center justify-between">
+            <button onclick="window.visariApp.navigateTo('materias')" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-violet-600 transition">
+              <span>← Volver al listado de materias</span>
+            </button>
+            <button onclick="window.visariApp.openNewTaskModal()" class="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow">
+              <span>+ Añadir Actividad / Examen</span>
+            </button>
+          </div>
+
+          <!-- Subject Hero Card -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span id="materia-detail-code" class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md text-white bg-slate-900">INF-204</span>
+                <h2 id="materia-detail-name" class="text-2xl font-extrabold text-slate-900 font-display mt-2">Nombre de Materia</h2>
+                <p id="materia-detail-prof" class="text-xs text-slate-500 mt-0.5">Profesor Titular</p>
+              </div>
+
+              <!-- Accumulated Hours Badge -->
+              <div class="bg-violet-50 border border-violet-200 px-4 py-3 rounded-xl text-right">
+                <span class="text-[11px] font-bold text-violet-600 uppercase tracking-wider block">Horas de Estudio</span>
+                <span id="materia-detail-hours" class="text-xl font-black text-slate-900">0h</span>
+              </div>
+            </div>
+
+            <!-- Reactive Progress Bar in Subject -->
+            <div class="pt-3 border-t border-slate-100">
+              <div class="flex justify-between items-center text-xs font-semibold mb-1.5">
+                <span class="text-slate-700">Avance de Actividades</span>
+                <span id="materia-detail-progress-num" class="text-violet-600 font-extrabold text-sm">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="materia-detail-progress-bar" class="h-full bg-violet-600 rounded-full transition-all duration-600" style="width: 0%"></div>
+              </div>
+              <p id="materia-detail-ratio" class="text-xs text-slate-400 mt-1">0 de 0 actividades completadas</p>
+            </div>
+          </div>
+
+          <!-- Tasks & Activities List -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-slate-900 font-display">Plan de Actividades & Evaluaciones</h3>
+              <span class="text-xs text-slate-400">Marca las casillas para actualizar el progreso en tiempo real</span>
+            </div>
+
+            <div id="materia-detail-tasks" class="space-y-2.5">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW: CRONÓMETRO ("BOTÓN B") -->
+        <!-- ========================================================================= -->
+        <div id="view-timer" class="space-y-8 hidden">
+          <div class="text-center max-w-xl mx-auto space-y-2">
+            <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-violet-100 text-violet-700">Módulo Cronómetro</span>
+            <h2 class="text-3xl font-extrabold text-slate-900 font-display">Sesión de Estudio ("Botón B")</h2>
+            <p class="text-xs sm:text-sm text-slate-500">
+              Inicia el cronómetro mientras repasas o resuelves tareas. Al detenerlo, asigna el tiempo transcurrido a la materia correspondiente para actualizar tus métricas automáticamente.
+            </p>
+          </div>
+
+          <!-- Big Focus Timer Widget -->
+          <div class="max-w-lg mx-auto bg-white p-8 sm:p-12 rounded-3xl border border-slate-200/80 shadow-xl text-center space-y-8">
+            
+            <!-- Digital Display Circle -->
+            <div id="timer-container-circle" class="w-64 h-64 sm:w-72 sm:h-72 mx-auto rounded-full border-4 border-slate-200 flex flex-col items-center justify-center bg-slate-50 transition-all duration-500">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">TIEMPO ENFOCADO</span>
+              <div id="main-timer-display" class="text-4xl sm:text-5xl font-black font-mono tracking-tight text-slate-900">
+                00:00:00
+              </div>
+              <span class="text-xs font-medium text-violet-600 mt-2">En curso</span>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center justify-center gap-4">
+              <!-- Start Button -->
+              <button id="timer-start-btn" onclick="window.visariApp.startTimer()" class="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-violet-600/30 transition transform active:scale-95 flex items-center gap-2">
+                <span>▶ Iniciar Estudio</span>
+              </button>
+
+              <!-- Pause Button -->
+              <button id="timer-pause-btn" onclick="window.visariApp.pauseTimer()" class="hidden px-8 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-2xl shadow-lg shadow-amber-500/30 transition transform active:scale-95 flex items-center gap-2">
+                <span>⏸ Pausar</span>
+              </button>
+
+              <!-- Stop & Assign ("Botón B Finalizer") -->
+              <button id="timer-stop-btn" onclick="window.visariApp.stopTimerPrompt()" class="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-2xl shadow transition transform active:scale-95 flex items-center gap-2">
+                <span>⏹ Detener & Asignar</span>
+              </button>
+
+              <!-- Reset -->
+              <button onclick="window.visariApp.resetTimer()" class="p-3.5 text-slate-400 hover:text-slate-600 rounded-2xl hover:bg-slate-100 transition" title="Reiniciar a cero">
+                ↺
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW: CALENDARIO -->
+        <!-- ========================================================================= -->
+        <div id="view-calendar" class="space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900 font-display">Módulo Calendario</h2>
+              <p class="text-xs sm:text-sm text-slate-500">Fechas de parciales, finales y entregas sincronizadas con tus materias</p>
+            </div>
+
+            <!-- Month navigation -->
+            <div class="flex items-center gap-2">
+              <button onclick="window.visariApp.prevMonth()" class="p-2 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition">
+                ← Mes Ant.
+              </button>
+              <span id="calendar-month-label" class="text-sm font-bold text-slate-800 px-3">Octubre 2026</span>
+              <button onclick="window.visariApp.nextMonth()" class="p-2 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition">
+                Mes Sig. →
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Calendar Grid (8 cols) -->
+            <div class="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+              <!-- Week Header -->
+              <div class="grid grid-cols-7 text-center text-xs font-bold text-slate-400 uppercase tracking-wider pb-2 border-b border-slate-100">
+                <div>Lun</div>
+                <div>Mar</div>
+                <div>Mié</div>
+                <div>Jue</div>
+                <div>Vie</div>
+                <div>Sáb</div>
+                <div>Dom</div>
+              </div>
+
+              <!-- Days Grid -->
+              <div id="calendar-days-grid" class="grid grid-cols-7 gap-2">
+                <!-- Rendered by JS -->
+              </div>
+
+              <!-- Day Detail Drawer / Popup -->
+              <div id="calendar-day-detail-box" class="p-4 bg-violet-50/80 rounded-xl border border-violet-200 hidden space-y-2">
+                <div class="flex items-center justify-between">
+                  <h4 id="calendar-day-detail-title" class="text-xs font-bold text-violet-900">Eventos del día</h4>
+                  <button onclick="document.getElementById('calendar-day-detail-box').classList.add('hidden')" class="text-xs text-violet-600 font-bold">✕ Cerrar</button>
+                </div>
+                <div id="calendar-day-detail-content" class="space-y-1.5"></div>
+              </div>
+            </div>
+
+            <!-- Upcoming Events Sidebar (4 cols) -->
+            <div class="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 class="text-base font-bold text-slate-900 font-display mb-1">Próximos Vencimientos</h3>
+                <p class="text-xs text-slate-400 mb-4">Orden cronológico de entregas y exámenes</p>
+
+                <div id="calendar-upcoming-list" class="space-y-3">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 mt-6 text-xs text-slate-500">
+                💡 <span class="font-semibold text-slate-700">Tip:</span> Al marcar una actividad como completada dentro de su materia, se actualizará el estado en este calendario.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW: TRABAJO EN EQUIPO -->
+        <!-- ========================================================================= -->
+        <div id="view-team" class="space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-xs font-bold text-violet-600 uppercase tracking-wider">Módulo Colaborativo</span>
+              <h2 id="team-project-title" class="text-2xl font-extrabold text-slate-900 font-display">Trabajo en Equipo</h2>
+              <p class="text-xs sm:text-sm text-slate-500">Asigna tareas a tus compañeros, supervisa avances y sincroniza el sprint</p>
+            </div>
+
+            <button onclick="window.visariApp.openNewTeamTaskModal()" class="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-2">
+              <span>+ Asignar Tarea Grupal</span>
+            </button>
+          </div>
+
+          <!-- Team Members Ribbon -->
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Integrantes del Equipo</span>
+            <div id="team-members-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Kanban Board -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            
+            <!-- Col 1: Por Hacer -->
+            <div class="bg-slate-100/70 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-700">📋 Por Hacer</span>
+              </div>
+              <div id="kanban-col-todo" class="space-y-3">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Col 2: En Progreso -->
+            <div class="bg-violet-50/50 p-4 rounded-2xl border border-violet-200/60 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-violet-200">
+                <span class="text-xs font-bold uppercase tracking-wider text-violet-800">⚡ En Curso</span>
+              </div>
+              <div id="kanban-col-in_progress" class="space-y-3">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Col 3: Completado -->
+            <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-200/60 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-emerald-200">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">✓ Completado</span>
+              </div>
+              <div id="kanban-col-done" class="space-y-3">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW: CONFIGURACIÓN DE PERFIL -->
+        <!-- ========================================================================= -->
+        <div id="view-profile" class="space-y-6 hidden">
+          <div class="max-w-2xl mx-auto space-y-6">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900 font-display">Configuración de Perfil</h2>
+              <p class="text-xs sm:text-sm text-slate-500">Gestiona tus datos personales y credenciales universitarias</p>
+            </div>
+
+            <!-- Academic Snapshot in Profile -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm grid grid-cols-3 text-center divide-x divide-slate-100">
+              <div>
+                <span class="text-[11px] text-slate-400 font-semibold uppercase block">Materias</span>
+                <span id="profile-stat-subjects" class="text-xl font-bold text-slate-900 font-display">4</span>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-400 font-semibold uppercase block">Horas Totales</span>
+                <span id="profile-stat-hours" class="text-xl font-bold text-violet-600 font-display">52h</span>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-400 font-semibold uppercase block">Promedio</span>
+                <span id="profile-stat-gpa" class="text-xl font-bold text-emerald-600 font-display">8.8</span>
+              </div>
+            </div>
+
+            <!-- Profile Form -->
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-sm">
+              <form id="profile-form" class="space-y-5">
+                
+                <!-- Avatar selection -->
+                <div class="space-y-3 p-4 bg-slate-50/70 rounded-2xl border border-slate-200/80">
+                  <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">Foto / Avatar de Perfil</label>
+                    <span class="text-[11px] text-violet-600 font-semibold bg-violet-50 px-2 py-0.5 rounded-full border border-violet-200">Sincronización en vivo</span>
+                  </div>
+
+                  <!-- Main Avatar Row -->
+                  <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <div class="relative group cursor-pointer" onclick="document.getElementById('profile-avatar-file').click()" title="Haz clic para subir foto desde la PC">
+                      <img id="profile-avatar-preview" src="" class="user-display-avatar w-20 h-20 rounded-full object-cover border-2 border-violet-500 shadow-md ring-4 ring-violet-100" alt="Vista previa">
+                      <div class="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">📷 Cambiar</span>
+                      </div>
+                    </div>
+
+                    <div class="flex-1 w-full space-y-2">
+                      <!-- URL Input -->
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Pegar URL de foto o imagen:</label>
+                        <input id="profile-avatar" type="text" placeholder="https://ejemplo.com/tu-foto.jpg" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition">
+                      </div>
+
+                      <!-- Direct PC File Upload (Base64) -->
+                      <div class="flex items-center gap-2">
+                        <input id="profile-avatar-file" type="file" accept="image/*" class="hidden">
+                        <button type="button" onclick="document.getElementById('profile-avatar-file').click()" class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold shadow-sm transition">
+                          <span>📁 Subir foto desde la PC</span>
+                        </button>
+                        <span id="file-upload-status" class="text-[11px] text-slate-400 truncate max-w-[200px]">Carga directa (Base64)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Quick Avatar Presets -->
+                  <div class="pt-2 border-t border-slate-200/60">
+                    <span class="text-[11px] font-semibold text-slate-500 block mb-2">O elige un avatar predeterminado:</span>
+                    <div class="flex items-center gap-2.5 flex-wrap" id="avatar-presets-container">
+                      <button type="button" data-url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80" class="avatar-preset-btn w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-500 transition hover:scale-105" title="Avatar Estudiante 1">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                      </button>
+                      <button type="button" data-url="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=250&q=80" class="avatar-preset-btn w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-500 transition hover:scale-105" title="Avatar Estudiante 2">
+                        <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                      </button>
+                      <button type="button" data-url="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80" class="avatar-preset-btn w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-500 transition hover:scale-105" title="Avatar Estudiante 3">
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                      </button>
+                      <button type="button" data-url="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80" class="avatar-preset-btn w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-500 transition hover:scale-105" title="Avatar Estudiante 4">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                      </button>
+                      <button type="button" data-url="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=250&q=80" class="avatar-preset-btn w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-500 transition hover:scale-105" title="Avatar Estudiante 5">
+                        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                      </button>
+                      <button type="button" data-url="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80" class="avatar-preset-btn w-9 h-9 rounded-full overflow-hidden border-2 border-transparent hover:border-violet-500 transition hover:scale-105" title="Avatar Estudiante 6">
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fields -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo</label>
+                    <input id="profile-name" type="text" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">País</label>
+                    <input id="profile-country" type="text" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Universidad / Instituto</label>
+                    <input id="profile-uni" type="text" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Carrera / Especialidad</label>
+                    <input id="profile-career" type="text" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Número de Celular / WhatsApp</label>
+                  <input id="profile-phone" type="text" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500">
+                </div>
+
+                <div class="pt-4 flex justify-end">
+                  <button type="submit" class="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow-md shadow-violet-600/30 transition transform active:scale-95">
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- FLOATING BUTTON: "CARGAR DATOS DEMO" (LIVE PRESENTATION COMPONENT) -->
+  <!-- ========================================================================= -->
+  <div class="fixed bottom-6 right-6 z-50">
+    <button id="floating-demo-btn" class="demo-float-btn group flex items-center gap-2.5 bg-navy-900 hover:bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-violet-500/50 hover:border-violet-400 transition-all transform active:scale-95" title="Rellena la app al instante con 4 materias y métricas">
+      <span class="text-lg">🪄</span>
+      <div class="text-left">
+        <span class="text-xs font-bold block text-violet-300 group-hover:text-violet-200">Cargar Datos Demo</span>
+        <span class="text-[10px] text-slate-400 block">4 Materias & Estadísticas</span>
+      </div>
+    </button>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: DETENER CRONÓMETRO Y ASIGNAR A MATERIA ("BOTÓN B") -->
+  <!-- ========================================================================= -->
+  <div id="modal-assign-study-time" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden modal-overlay">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 modal-content space-y-5">
+      <div class="text-center space-y-1.5">
+        <div class="w-12 h-12 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center mx-auto text-xl font-bold">
+          ⏱️
+        </div>
+        <h3 class="text-xl font-bold font-display text-slate-900">¡Gran sesión de estudio!</h3>
+        <p class="text-xs text-slate-500">¿A qué materia deseas asignar este tiempo de estudio?</p>
+      </div>
+
+      <!-- Time Summary Box -->
+      <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 text-center">
+        <span class="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Tiempo Transcurrido</span>
+        <span id="assign-time-summary" class="text-2xl font-black text-violet-600 font-mono">00:00:00</span>
+      </div>
+
+      <!-- Select Subject -->
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Materia Asignada</label>
+        <select id="assign-subject-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-semibold focus:outline-none focus:border-violet-500">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Notas de Repaso (Opcional)</label>
+        <input type="text" placeholder="Ej: Ejercicios de complejidad algorítmica" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-violet-500">
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="pt-2 flex gap-3">
+        <button onclick="document.getElementById('modal-assign-study-time').classList.add('hidden')" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">
+          Descartar
+        </button>
+        <button onclick="window.visariApp.confirmAssignStudyTime()" class="w-1/2 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-violet-600/30 transition">
+          Guardar y Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: AGREGAR NUEVA MATERIA -->
+  <!-- ========================================================================= -->
+  <div id="modal-new-subject" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden modal-overlay">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 modal-content space-y-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold font-display text-slate-900">Agregar Nueva Materia</h3>
+        <button onclick="window.visariApp.closeNewSubjectModal()" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+      </div>
+
+      <form id="form-new-subject" class="space-y-4" onsubmit="event.preventDefault(); window.visariApp.store.addSubject({
+        code: document.getElementById('new-sub-code').value,
+        name: document.getElementById('new-sub-name').value,
+        professor: document.getElementById('new-sub-prof').value,
+        credits: document.getElementById('new-sub-credits').value,
+        color: 'from-violet-600 to-indigo-800'
+      }); window.visariApp.closeNewSubjectModal();">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Código de Materia</label>
+          <input id="new-sub-code" type="text" required placeholder="Ej: SIS-301" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre de la Materia</label>
+          <input id="new-sub-name" type="text" required placeholder="Ej: Redes y Telecomunicaciones" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Profesor / Docente Titular</label>
+          <input id="new-sub-prof" type="text" required placeholder="Ej: Ing. Martín Gómez" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Créditos Académicos</label>
+          <input id="new-sub-credits" type="number" min="1" max="10" value="4" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="window.visariApp.closeNewSubjectModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow">Crear Materia</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: AGREGAR NUEVA ACTIVIDAD / TAREA A UNA MATERIA -->
+  <!-- ========================================================================= -->
+  <div id="modal-new-task" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden modal-overlay">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 modal-content space-y-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold font-display text-slate-900">Añadir Actividad</h3>
+        <button onclick="window.visariApp.closeNewTaskModal()" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+      </div>
+
+      <form id="form-new-task" class="space-y-4" onsubmit="event.preventDefault(); window.visariApp.store.addTask(window.visariApp.selectedSubjectDetail, {
+        title: document.getElementById('new-task-title').value,
+        type: document.getElementById('new-task-type').value,
+        dueDate: document.getElementById('new-task-date').value,
+        weight: document.getElementById('new-task-weight').value
+      }); window.visariApp.closeNewTaskModal();">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Título de la Actividad / Lectura</label>
+          <input id="new-task-title" type="text" required placeholder="Ej: Lectura: Clean Code (Cap. 2) - Autor: Robert C. Martin" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Actividad</label>
+            <select id="new-task-type" onchange="const t = document.getElementById('new-task-title'); if (this.value === 'lectura') { t.placeholder = 'Ej: Lectura: Cap. 4 - Autor: Don Norman'; } else { t.placeholder = 'Ej: Trabajo Práctico N° 3'; }" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500 font-medium">
+              <option value="lectura" selected>📖 Lectura Diaria (Autor / Cap.)</option>
+              <option value="tarea">Tarea Regular</option>
+              <option value="entrega">Entrega TP / Proyecto</option>
+              <option value="foro">Participación Foro</option>
+              <option value="parcial">Examen Parcial</option>
+              <option value="final">Examen Final</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha Límite</label>
+            <input id="new-task-date" type="date" required value="2026-11-05" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Ponderación (%)</label>
+          <input id="new-task-weight" type="number" min="5" max="50" value="15" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="window.visariApp.closeNewTaskModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow">Añadir</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: AGREGAR TAREA EN EQUIPO -->
+  <!-- ========================================================================= -->
+  <div id="modal-new-team-task" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden modal-overlay">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 modal-content space-y-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold font-display text-slate-900">Asignar Tarea Grupal</h3>
+        <button onclick="window.visariApp.closeNewTeamTaskModal()" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+      </div>
+
+      <form id="form-new-team-task" class="space-y-4" onsubmit="event.preventDefault(); window.visariApp.store.addTeamTask({
+        title: document.getElementById('team-task-title').value,
+        assigneeId: document.getElementById('team-task-assignee').value,
+        priority: document.getElementById('team-task-priority').value,
+        dueDate: document.getElementById('team-task-date').value
+      }); window.visariApp.closeNewTeamTaskModal();">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Título de la Tarea</label>
+          <input id="team-task-title" type="text" required placeholder="Ej: Redactar conclusiones del sprint" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Asignar a Compañero</label>
+            <select id="team-task-assignee" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Prioridad</label>
+            <select id="team-task-priority" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+              <option value="alta">Alta</option>
+              <option value="media" selected>Media</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha Límite</label>
+          <input id="team-task-date" type="date" required value="2026-11-08" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500">
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="window.visariApp.closeNewTeamTaskModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow">Asignar al Tablero</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
