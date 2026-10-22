@@ -1641,8 +1641,8 @@ class VisariApp {
 
       const cell = document.createElement('div');
       cell.className = `h-28 p-2 rounded-xl border transition-all flex flex-col justify-between cursor-pointer ${isToday
-          ? 'bg-violet-50/60 border-violet-400 ring-2 ring-violet-400/20'
-          : 'bg-white border-slate-200/80 hover:border-violet-300 hover:shadow-sm'
+        ? 'bg-violet-50/60 border-violet-400 ring-2 ring-violet-400/20'
+        : 'bg-white border-slate-200/80 hover:border-violet-300 hover:shadow-sm'
         }`;
 
       cell.innerHTML = `
