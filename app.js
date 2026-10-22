@@ -1,22 +1,22 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  getDoc, 
-  setDoc 
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  updateProfile 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 
 // Configuración oficial de Firebase
@@ -148,8 +148,8 @@ const DEMO_DATA = {
         { id: "t-403", title: "Foro de Resolución de Paradojas Lógicas", type: "foro", dueDate: "2026-11-03", weight: 10, completed: false, grade: null },
         { id: "t-404", title: "Segundo Parcial: Teoría de Grafos y Autómatas", type: "parcial", dueDate: "2026-11-10", weight: 35, completed: false, grade: null },
         { id: "t-405", title: "Examen Final Regular", type: "final", dueDate: "2026-12-15", weight: 35, completed: false, grade: null }
-    ]
-  }],
+      ]
+    }],
   team: {
     projectName: "Plataforma EduTech VISARi - MVP Colaborativo",
     subjectId: "sub-2",
@@ -178,7 +178,7 @@ class VisariStore {
     this.storageKey = 'visari_state_v1';
     this.listeners = [];
     this.state = this.loadState();
-    
+
     // Timer state (in-memory for active sessions)
     this.timer = {
       seconds: 0,
@@ -194,7 +194,7 @@ class VisariStore {
       const saved = localStorage.getItem(this.storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (!parsed.user) parsed.user = { ...DEMO_DATA.user };
+        if (!parsed.user) parsed.user = { name: '', subjects: [], stats: { promedio: 0, horas: 0 } };
         return parsed;
       }
     } catch (e) {
@@ -350,7 +350,7 @@ class VisariStore {
     if (!task) return;
 
     task.completed = !task.completed;
-    
+
     // Check if whole subject reached 100%
     const progress = this.getSubjectProgress(subject);
     if (task.completed && progress === 100) {
@@ -1150,7 +1150,7 @@ class VisariApp {
     if (progressEl) progressEl.textContent = `${metrics.globalProgress}% (${metrics.completedTasks}/${metrics.totalTasks} tareas)`;
     if (progressFill) progressFill.style.width = `${metrics.globalProgress}%`;
     if (examsCountEl) {
-      examsCountEl.textContent = metrics.upcomingExams.length > 0 
+      examsCountEl.textContent = metrics.upcomingExams.length > 0
         ? `${metrics.upcomingExams.length} programados`
         : "Sin exámenes próximos";
     }
@@ -1226,7 +1226,7 @@ class VisariApp {
         calContainer.innerHTML = `<p class="text-sm text-slate-500 py-3">No hay exámenes ni entregas urgentes próximas.</p>`;
       } else {
         calContainer.innerHTML = metrics.upcomingExams.slice(0, 3).map(exam => {
-          const typeBadge = exam.type === 'parcial' 
+          const typeBadge = exam.type === 'parcial'
             ? '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">PARCIAL</span>'
             : '<span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">FINAL</span>';
           return `
@@ -1512,7 +1512,7 @@ class VisariApp {
       this.store.timer.seconds++;
       const timeDisplay = document.getElementById('main-timer-display');
       if (timeDisplay) timeDisplay.textContent = this.formatSeconds(this.store.timer.seconds);
-      
+
       const topDisplay = document.getElementById('topbar-timer-display');
       if (topDisplay) topDisplay.textContent = this.formatSeconds(this.store.timer.seconds);
     }, 1000);
@@ -1640,11 +1640,10 @@ class VisariApp {
       const dayEvents = allEvents.filter(e => e.dueDate === dateStr);
 
       const cell = document.createElement('div');
-      cell.className = `h-28 p-2 rounded-xl border transition-all flex flex-col justify-between cursor-pointer ${
-        isToday 
-          ? 'bg-violet-50/60 border-violet-400 ring-2 ring-violet-400/20' 
+      cell.className = `h-28 p-2 rounded-xl border transition-all flex flex-col justify-between cursor-pointer ${isToday
+          ? 'bg-violet-50/60 border-violet-400 ring-2 ring-violet-400/20'
           : 'bg-white border-slate-200/80 hover:border-violet-300 hover:shadow-sm'
-      }`;
+        }`;
 
       cell.innerHTML = `
         <div class="flex items-center justify-between">
@@ -1653,19 +1652,19 @@ class VisariApp {
         </div>
         <div class="space-y-1 overflow-hidden flex-1 mt-1">
           ${dayEvents.slice(0, 2).map(ev => {
-            const isExam = ev.type === 'parcial' || ev.type === 'final';
-            const isLectura = ev.type === 'lectura';
-            const pillCls = isExam 
-              ? 'bg-amber-100 text-amber-900 font-semibold' 
-              : isLectura 
-                ? 'bg-teal-100 text-teal-900 font-semibold border border-teal-200' 
-                : 'bg-slate-100 text-slate-700';
-            return `
+        const isExam = ev.type === 'parcial' || ev.type === 'final';
+        const isLectura = ev.type === 'lectura';
+        const pillCls = isExam
+          ? 'bg-amber-100 text-amber-900 font-semibold'
+          : isLectura
+            ? 'bg-teal-100 text-teal-900 font-semibold border border-teal-200'
+            : 'bg-slate-100 text-slate-700';
+        return `
               <div class="text-[10px] px-1.5 py-0.5 rounded truncate font-medium ${pillCls}" title="${ev.title} (${ev.subjectCode})">
                 ${isLectura ? '📖 ' : ''}${ev.title}
               </div>
             `;
-          }).join('')}
+      }).join('')}
           ${dayEvents.length > 2 ? `<div class="text-[9px] text-slate-400 font-medium">+${dayEvents.length - 2} más</div>` : ''}
         </div>
       `;
@@ -1759,17 +1758,17 @@ class VisariApp {
       if (!col) return;
 
       const tasks = team.tasks.filter(t => t.status === status);
-      col.innerHTML = tasks.length === 0 
+      col.innerHTML = tasks.length === 0
         ? `<div class="p-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">Sin tareas</div>`
         : tasks.map(task => {
-            const member = team.members.find(m => m.id === task.assigneeId) || { name: 'Sin asignar', avatar: '' };
-            const priorityCls = {
-              alta: 'bg-rose-100 text-rose-700',
-              media: 'bg-amber-100 text-amber-700',
-              baja: 'bg-slate-100 text-slate-700'
-            }[task.priority] || 'bg-slate-100 text-slate-700';
+          const member = team.members.find(m => m.id === task.assigneeId) || { name: 'Sin asignar', avatar: '' };
+          const priorityCls = {
+            alta: 'bg-rose-100 text-rose-700',
+            media: 'bg-amber-100 text-amber-700',
+            baja: 'bg-slate-100 text-slate-700'
+          }[task.priority] || 'bg-slate-100 text-slate-700';
 
-            return `
+          return `
               <div class="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow transition-all space-y-2.5">
                 <div class="flex items-start justify-between gap-2">
                   <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${priorityCls}">
@@ -1793,7 +1792,7 @@ class VisariApp {
                 </div>
               </div>
             `;
-          }).join('');
+        }).join('');
     });
   }
 
