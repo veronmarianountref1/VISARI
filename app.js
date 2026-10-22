@@ -1,3 +1,22 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+// Configuración oficial de Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDqsrygmoi3sZIEEcCn55Kem-H5EsK-4MY",
+  authDomain: "visari-ae148.firebaseapp.com",
+  projectId: "visari-ae148",
+  storageBucket: "visari-ae148.firebasestorage.app",
+  messagingSenderId: "786255189281",
+  appId: "1:786255189281:web:517eb509c0cf324fbc1a60",
+  measurementId: "G-CGXW6Z2WWN"
+};
+
+// Inicializar Firebase y Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+console.log("¡VISARi conectado a Firebase con éxito!");
 /**
  * VISARi - Visualización Interactiva del Rendimiento Académico
  * Core State & Reactivity Engine
@@ -107,7 +126,7 @@ const DEMO_DATA = {
         { id: "t-404", title: "Segundo Parcial: Teoría de Grafos y Autómatas", type: "parcial", dueDate: "2026-11-10", weight: 35, completed: false, grade: null },
         { id: "t-405", title: "Examen Final Regular", type: "final", dueDate: "2026-12-15", weight: 35, completed: false, grade: null }
 
-  ],
+  },
   team: {
     projectName: "Plataforma EduTech VISARi - MVP Colaborativo",
     subjectId: "sub-2",
