@@ -126,7 +126,7 @@ const DEMO_DATA = {
         { id: "t-404", title: "Segundo Parcial: Teoría de Grafos y Autómatas", type: "parcial", dueDate: "2026-11-10", weight: 35, completed: false, grade: null },
         { id: "t-405", title: "Examen Final Regular", type: "final", dueDate: "2026-12-15", weight: 35, completed: false, grade: null }
 
-  },
+  }],
   team: {
     projectName: "Plataforma EduTech VISARi - MVP Colaborativo",
     subjectId: "sub-2",
