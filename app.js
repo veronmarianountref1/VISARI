@@ -79,17 +79,27 @@ class VisariStore {
     };
   }
 
+  // Actualizar la clave según el usuario autenticado
+  setUserData(user) {
+    if (user && user.email) {
+      this.storageKey = `visari_state_${user.email.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+      this.state = this.loadState();
+      this.notify();
+    }
+  }
+
   loadState() {
     try {
       const saved = localStorage.getItem(this.storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (!parsed.user) parsed.user = { name: '', subjects: [], stats: { promedio: 0, horas: 0 } };
+        if (!parsed.user) parsed.user = { name: '', subjects: [], stats: {} };
         return parsed;
       }
     } catch (e) {
       console.warn("Could not load from localStorage:", e);
     }
+    // Si no hay datos guardados para este usuario, retorna el estado base en cero
     return JSON.parse(JSON.stringify(DEMO_DATA));
   }
 
@@ -416,6 +426,7 @@ class VisariApp {
   }
 
   async handleUserAuthenticated(firebaseUser) {
+    this.store.setUserData(firebaseUser);
     let profileData = null;
 
     // Load or initialize user profile in Firestore
