@@ -50,10 +50,10 @@ const DEMO_DATA = {
     uid: null,
     name: "Estudiante",
     email: "",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+    avatar: "",
     country: "Argentina",
-    university: "UNTREF VIRTUAL",
-    career: "Licenciatura en Producción Audiovisual",
+    university: "",
+    career: "",
     phone: "",
     isAuthenticated: false
   },
@@ -463,8 +463,8 @@ class VisariApp {
           email: firebaseUser.email || "",
           avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email || 'Estudiante')}&background=7c3aed&color=fff`,
           country: this.store.state.user.country || "Argentina",
-          university: this.store.state.user.university || "UNTREF VIRTUAL",
-          career: this.store.state.user.career || "Licenciatura en Producción Audiovisual",
+          university: this.store.state.user.university || "",
+          career: this.store.state.user.career || "",
           phone: this.store.state.user.phone || "",
           createdAt: new Date().toISOString()
         };
