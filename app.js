@@ -1651,108 +1651,111 @@ class VisariApp {
     this.render();
   }
 
-  // ==========================================
+  // =====================================
   // VIEW 7: TRABAJO EN EQUIPO
-  // ==========================================
-  renderTeam(state) {
-    // 1. Abrir modal o prompt para sumar compañero por email
-    async addTeamMemberPrompt() {
-      const email = prompt("Ingresá el correo electrónico registrado de tu compañero:");
-      if (!email) return;
+  // =====================================
 
-      try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", email.trim().toLowerCase()));
-        const querySnapshot = await getDocs(q);
+  // 1. Método para sumar compañero por email
+  async addTeamMemberPrompt() {
+    const email = prompt("Ingresá el correo electrónico registrado de tu compañero:");
+    if (!email) return;
 
-        if (querySnapshot.empty) {
-          alert("El usuario aún no está registrado en VISARi.");
-          return;
-        }
+    try {
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", email.trim().toLowerCase()));
+      const querySnapshot = await getDocs(q);
 
-        let memberData = null;
-        querySnapshot.forEach((doc) => {
-          memberData = doc.data();
-        });
-
-        if (!this.store.state.team) {
-          this.store.state.team = { members: [], tasks: [] };
-        }
-
-        // Evitar duplicados
-        if (this.store.state.team.members.some(m => m.email === memberData.email)) {
-          alert("Este compañero ya forma parte de tu equipo.");
-          return;
-        }
-
-        this.store.state.team.members.push({
-          name: memberData.name || "Compañero",
-          email: memberData.email,
-          role: memberData.career || "Colaborador",
-          avatar: memberData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberData.name)}`
-        });
-
-        this.store.saveState();
-        this.renderTeam(this.store.state);
-        alert(`¡ ${memberData.name} fue agregado con éxito!`);
-
-      } catch (error) {
-        console.error("Error al buscar compañero:", error);
-        alert("Ocurrió un error al verificar el correo.");
+      if (querySnapshot.empty) {
+        alert("El usuario aún no está registrado en VISARi.");
+        return;
       }
-    }
 
-    // 2. Asignar nueva tarea grupal
-    openNewTeamTaskModal() {
-      const title = prompt("Título de la tarea o actividad:");
-      if (!title) return;
-
-      const subjectList = this.store.state.subjects.map(s => s.name).join("\n - ");
-      const subject = prompt(`¿A qué materia corresponde?\nDisponibles:\n - ${subjectList}`);
-      if (!subject) return;
+      let memberData = null;
+      querySnapshot.forEach((doc) => {
+        memberData = doc.data();
+      });
 
       if (!this.store.state.team) {
         this.store.state.team = { members: [], tasks: [] };
       }
 
-      const newTask = {
-        id: Date.now().toString(),
-        title: title,
-        subject: subject,
-        status: 'todo', // 'todo' | 'in_progress' | 'done'
-        assignedTo: this.store.state.user.name
-      };
+      if (this.store.state.team.members.some(m => m.email === memberData.email)) {
+        alert("Este compañero ya forma parte de tu equipo.");
+        return;
+      }
 
-      this.store.state.team.tasks.push(newTask);
+      this.store.state.team.members.push({
+        name: memberData.name || "Compañero",
+        email: memberData.email,
+        role: memberData.career || "Colaborador",
+        avatar: memberData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberData.name)}`
+      });
+
+      this.store.saveState();
+      this.renderTeam(this.store.state);
+      alert(`¡${memberData.name} fue agregado con éxito!`);
+
+    } catch (error) {
+      console.error("Error al buscar compañero:", error);
+      alert("Ocurrió un error al verificar el correo.");
+    }
+  }
+
+  // 2. Asignar nueva tarea grupal
+  openNewTeamTaskModal() {
+    const title = prompt("Título de la tarea o actividad:");
+    if (!title) return;
+
+    const subjectList = this.store.state.subjects.map(s => s.name).join("\n - ");
+    const subject = prompt(`¿A qué materia corresponde?\nDisponibles:\n - ${subjectList}`);
+    if (!subject) return;
+
+    if (!this.store.state.team) {
+      this.store.state.team = { members: [], tasks: [] };
+    }
+
+    const newTask = {
+      id: Date.now().toString(),
+      title: title,
+      subject: subject,
+      status: 'todo',
+      assignedTo: this.store.state.user.name
+    };
+
+    this.store.state.team.tasks.push(newTask);
+    this.store.saveState();
+    this.renderTeam(this.store.state);
+  }
+  // 3. Mover tareas en el tablero Kanban
+  moveTeamTask(taskId, newStatus) {
+    const tasks = this.store.state.team.tasks || [];
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      task.status = newStatus;
       this.store.saveState();
       this.renderTeam(this.store.state);
     }
-
-    // 3. Mover tareas en el tablero Kanban
-    moveTeamTask(taskId, newStatus) {
-      const tasks = this.store.state.team.tasks || [];
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        task.status = newStatus;
-        this.store.saveState();
-        this.renderTeam(this.store.state);
-      }
-    }
+  }
+  // Método para renderizar la vista de equipo y tablero Kanban
+  renderTeam(state) {
+    if (!state || !state.team) return;
     const team = state.team;
-    document.getElementById('team-project-title').textContent = team.projectName;
+
+    const projectTitle = document.getElementById('team-project-title');
+    if (projectTitle) projectTitle.textContent = team.projectName || "Proyecto Grupal";
 
     // Team members avatars
     const membersList = document.getElementById('team-members-list');
     if (membersList) {
       membersList.innerHTML = team.members.map(m => `
-        <div class="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-sm">
-          <img src="${m.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-violet-100" />
-          <div>
-            <h4 class="text-xs font-bold text-slate-900">${m.name}</h4>
-            <p class="text-[11px] text-slate-500">${m.role}</p>
-          </div>
-        </div>
-      `).join('');
+                <div class="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-sm">
+                    <img src="${m.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-violet-100" />
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-900">${m.name}</h4>
+                        <p class="text-[11px] text-slate-500">${m.role}</p>
+                    </div>
+                </div>
+            `).join('');
     }
 
     // Populate Kanban Columns
@@ -1773,33 +1776,19 @@ class VisariApp {
           }[task.priority] || 'bg-slate-100 text-slate-700';
 
           return `
-              <div class="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow transition-all space-y-2.5">
-                <div class="flex items-start justify-between gap-2">
-                  <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${priorityCls}">
-                    ${task.priority}
-                  </span>
-                  <div class="relative inline-block text-left">
-                    <select class="text-[11px] font-semibold bg-slate-100 text-slate-700 rounded-lg px-1.5 py-0.5 border-none cursor-pointer" onchange="window.visariApp.store.updateTeamTaskStatus('${task.id}', this.value)">
-                      <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Por hacer</option>
-                      <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>En curso</option>
-                      <option value="done" ${task.status === 'done' ? 'selected' : ''}>Completado</option>
-                    </select>
-                  </div>
-                </div>
-                <h4 class="text-xs font-bold text-slate-800 leading-snug">${task.title}</h4>
-                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
-                  <div class="flex items-center gap-1.5">
-                    <img src="${member.avatar}" class="w-5 h-5 rounded-full object-cover" />
-                    <span class="text-[11px] text-slate-600 font-medium truncate max-w-[90px]">${member.name}</span>
-                  </div>
-                  <span class="text-[10px] text-slate-400 font-medium">📅 ${task.dueDate}</span>
-                </div>
-              </div>
-            `;
+                        <div class="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityCls}">${task.subject || 'General'}</span>
+                            </div>
+                            <h4 class="text-xs font-semibold text-slate-800 mb-2">${task.title}</h4>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                                <span>${member.name}</span>
+                            </div>
+                        </div>
+                    `;
         }).join('');
     });
   }
-
   openNewTeamTaskModal() {
     const modal = document.getElementById('modal-new-team-task');
     const selectMember = document.getElementById('team-task-assignee');
@@ -1815,7 +1804,7 @@ class VisariApp {
     const modal = document.getElementById('modal-new-team-task');
     if (modal) modal.classList.add('hidden');
   }
-}
+} // <--- Esta llave cierra la clase VisariApp
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
