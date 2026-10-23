@@ -1655,6 +1655,89 @@ class VisariApp {
   // VIEW 7: TRABAJO EN EQUIPO
   // ==========================================
   renderTeam(state) {
+    // 1. Abrir modal o prompt para sumar compañero por email
+    async addTeamMemberPrompt() {
+      const email = prompt("Ingresá el correo electrónico registrado de tu compañero:");
+      if (!email) return;
+
+      try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email.trim().toLowerCase()));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          alert("El usuario aún no está registrado en VISARi.");
+          return;
+        }
+
+        let memberData = null;
+        querySnapshot.forEach((doc) => {
+          memberData = doc.data();
+        });
+
+        if (!this.store.state.team) {
+          this.store.state.team = { members: [], tasks: [] };
+        }
+
+        // Evitar duplicados
+        if (this.store.state.team.members.some(m => m.email === memberData.email)) {
+          alert("Este compañero ya forma parte de tu equipo.");
+          return;
+        }
+
+        this.store.state.team.members.push({
+          name: memberData.name || "Compañero",
+          email: memberData.email,
+          role: memberData.career || "Colaborador",
+          avatar: memberData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberData.name)}`
+        });
+
+        this.store.saveState();
+        this.renderTeam(this.store.state);
+        alert(`¡ ${memberData.name} fue agregado con éxito!`);
+
+      } catch (error) {
+        console.error("Error al buscar compañero:", error);
+        alert("Ocurrió un error al verificar el correo.");
+      }
+    }
+
+    // 2. Asignar nueva tarea grupal
+    openNewTeamTaskModal() {
+      const title = prompt("Título de la tarea o actividad:");
+      if (!title) return;
+
+      const subjectList = this.store.state.subjects.map(s => s.name).join("\n - ");
+      const subject = prompt(`¿A qué materia corresponde?\nDisponibles:\n - ${subjectList}`);
+      if (!subject) return;
+
+      if (!this.store.state.team) {
+        this.store.state.team = { members: [], tasks: [] };
+      }
+
+      const newTask = {
+        id: Date.now().toString(),
+        title: title,
+        subject: subject,
+        status: 'todo', // 'todo' | 'in_progress' | 'done'
+        assignedTo: this.store.state.user.name
+      };
+
+      this.store.state.team.tasks.push(newTask);
+      this.store.saveState();
+      this.renderTeam(this.store.state);
+    }
+
+    // 3. Mover tareas en el tablero Kanban
+    moveTeamTask(taskId, newStatus) {
+      const tasks = this.store.state.team.tasks || [];
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        task.status = newStatus;
+        this.store.saveState();
+        this.renderTeam(this.store.state);
+      }
+    }
     const team = state.team;
     document.getElementById('team-project-title').textContent = team.projectName;
 
