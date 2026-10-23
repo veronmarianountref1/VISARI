@@ -409,7 +409,6 @@ class VisariApp {
 
     this.setupGlobalEvents();
     this.setupFirebaseAuth();
-    this.render();
   }
 
   setupGlobalEvents() {
@@ -902,8 +901,37 @@ class VisariApp {
     if (uniInput) uniInput.value = user.university || '';
     if (careerInput) careerInput.value = user.career || '';
     if (phoneInput) phoneInput.value = user.phone || '';
-    if (emailDisplay) emailDisplay.textContent = user.email || 'Sin correo asociado';
+    if (emailDisplay) emailDisplay.textContent = user.email || 'Sin correo';
 
+    // 1. Actualizar la previsualización visual del avatar en el perfil
+    const avatarContainer = document.getElementById('profile-avatar-preview');
+    if (avatarContainer) {
+      if (user.avatar) {
+        avatarContainer.innerHTML = `<img src="${user.avatar}" class="w-full h-full rounded-full object-cover" />`;
+      } else {
+        const initial = (user.name || 'V')[0].toUpperCase();
+        avatarContainer.innerHTML = `<span class="text-xl font-bold text-white">${initial}</span>`;
+      }
+    }
+
+    // 2. Guardado automático al escribir o cambiar la URL de la foto
+    if (avatarInput && !avatarInput.dataset.listener) {
+      avatarInput.dataset.listener = "true";
+      avatarInput.addEventListener('input', (e) => {
+        this.store.state.user.avatar = e.target.value.trim();
+        this.store.saveState();
+        this.renderProfile(this.store.state);
+      });
+    }
+
+    // 3. Guardado automático al cambiar el nombre
+    if (nameInput && !nameInput.dataset.listener) {
+      nameInput.dataset.listener = "true";
+      nameInput.addEventListener('input', (e) => {
+        this.store.state.user.name = e.target.value.trim();
+        this.store.saveState();
+      });
+    }
     // Summary counters in profile
     const metrics = this.store.getGlobalMetrics();
     const countSubjects = document.getElementById('profile-stat-subjects');
@@ -1076,6 +1104,60 @@ class VisariApp {
         : "Sin exámenes próximos";
     }
 
+    // =====================================
+    // RESUMEN SEMANAL (LUNES A DOMINGO)
+    // =====================================
+    const weeklySection = document.getElementById('dashboard-weekly-summary');
+    if (weeklySection) {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+
+      const monday = new Date(now.setDate(diffToMonday));
+      monday.setHours(0, 0, 0, 0);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+
+      const weeklySessions = (state.studySessions || []).filter(session => {
+        const sessionDate = new Date(session.date);
+        return sessionDate >= monday && sessionDate <= sunday;
+      });
+
+      const weeklyHoursBySubject = {};
+      weeklySessions.forEach(session => {
+        weeklyHoursBySubject[session.subject] = (weeklyHoursBySubject[session.subject] || 0) + (session.durationMinutes || 0);
+      });
+
+      weeklySection.innerHTML = `
+                <div class="p-5 bg-gradient-to-br from-indigo-50/90 via-slate-50 to-violet-50/50 rounded-2xl border border-indigo-100/80 shadow-sm mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-indigo-950">Rendimiento Semanal (Lunes a Domingo)</h3>
+                            <p class="text-xs text-indigo-700/70">Del ${monday.toLocaleDateString()} al ${sunday.toLocaleDateString()}</p>
+                        </div>
+                        <span class="px-2.5 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full shadow-sm">Ciclo Activo</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-3 bg-white/80 backdrop-blur rounded-xl border border-indigo-100/50">
+                            <span class="text-[11px] font-medium text-slate-500 block mb-1">Horas de Estudio Semanal</span>
+                            <span class="text-lg font-bold text-indigo-900">${(weeklySessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0) / 60).toFixed(1)} hrs</span>
+                        </div>
+                        <div class="p-3 bg-white/80 backdrop-blur rounded-xl border border-indigo-100/50">
+                            <span class="text-[11px] font-medium text-slate-500 block mb-1">Materias Activas esta Semana</span>
+                            <span class="text-lg font-bold text-indigo-900">${Object.keys(weeklyHoursBySubject).length}</span>
+                        </div>
+                        <div class="p-3 bg-white/80 backdrop-blur rounded-xl border border-indigo-100/50">
+                            <span class="text-[11px] font-medium text-slate-500 block mb-1">Tareas / Actividades Pendientes</span>
+                            <span class="text-lg font-bold text-indigo-900">${(state.tasks || []).filter(t => !t.completed).length}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+    }
+
+    // ... acá continúa el resto de tu código de renderDashboard (como el listado de materias de la línea 1112) ...
     // 4 Main Segments Previews
     this.renderDashboardSegments(state, metrics);
   }
