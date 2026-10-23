@@ -1105,7 +1105,7 @@ class VisariApp {
     }
 
     // =====================================
-    // RESUMEN SEMANAL (LUNES A DOMINGO)
+    // RESUMEN SEMANAL POR MATERIA (LUNES A DOMINGO)
     // =====================================
     const weeklySection = document.getElementById('dashboard-weekly-summary');
     if (weeklySection) {
@@ -1125,33 +1125,47 @@ class VisariApp {
         return sessionDate >= monday && sessionDate <= sunday;
       });
 
-      const weeklyHoursBySubject = {};
-      weeklySessions.forEach(session => {
-        weeklyHoursBySubject[session.subject] = (weeklyHoursBySubject[session.subject] || 0) + (session.durationMinutes || 0);
-      });
+      // Generar tarjetas individuales por cada materia
+      const subjectsHtml = (state.subjects || []).map(subject => {
+        const subSessions = weeklySessions.filter(s => s.subject === subject.name || s.subjectId === subject.id);
+        const subMinutes = subSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+        const subHours = (subMinutes / 60).toFixed(1);
+
+        const subTasks = subject.tasks || [];
+        const pendingTasks = subTasks.filter(t => !t.completed).length;
+        const totalTasks = subTasks.length;
+        const progressPercent = totalTasks > 0 ? Math.round(((totalTasks - pendingTasks) / totalTasks) * 100) : 0;
+
+        return `
+                    <div class="p-4 bg-white/90 backdrop-blur rounded-xl border border-indigo-100 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xs font-bold text-slate-900 truncate" title="${subject.name}">${subject.name}</h4>
+                                <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-semibold rounded-full">${subHours} hrs esta semana</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-1.5 mb-3 overflow-hidden">
+                                <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                            <span>Tareas pendientes: <strong class="text-slate-700">${pendingTasks}</strong></span>
+                            <span>Avance: <strong class="text-indigo-600">${progressPercent}%</strong></span>
+                        </div>
+                    </div>
+                `;
+      }).join('');
 
       weeklySection.innerHTML = `
-                <div class="p-5 bg-gradient-to-br from-indigo-50/90 via-slate-50 to-violet-50/50 rounded-2xl border border-indigo-100/80 shadow-sm mb-6">
-                    <div class="flex items-center justify-between mb-4">
+                <div class="p-6 bg-gradient-to-br from-indigo-50/90 via-slate-50 to-violet-50/50 rounded-2xl border border-indigo-100/80 shadow-sm my-6">
+                    <div class="flex items-center justify-between mb-5">
                         <div>
-                            <h3 class="text-sm font-bold text-indigo-950">Rendimiento Semanal (Lunes a Domingo)</h3>
-                            <p class="text-xs text-indigo-700/70">Del ${monday.toLocaleDateString()} al ${sunday.toLocaleDateString()}</p>
+                            <h3 class="text-sm font-bold text-indigo-950">Rendimiento Semanal por Materia</h3>
+                            <p class="text-xs text-indigo-700/70">Ciclo activo: Del ${monday.toLocaleDateString()} al ${sunday.toLocaleDateString()}</p>
                         </div>
-                        <span class="px-2.5 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full shadow-sm">Ciclo Activo</span>
+                        <span class="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full shadow-sm">Lunes a Domingo</span>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-3 bg-white/80 backdrop-blur rounded-xl border border-indigo-100/50">
-                            <span class="text-[11px] font-medium text-slate-500 block mb-1">Horas de Estudio Semanal</span>
-                            <span class="text-lg font-bold text-indigo-900">${(weeklySessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0) / 60).toFixed(1)} hrs</span>
-                        </div>
-                        <div class="p-3 bg-white/80 backdrop-blur rounded-xl border border-indigo-100/50">
-                            <span class="text-[11px] font-medium text-slate-500 block mb-1">Materias Activas esta Semana</span>
-                            <span class="text-lg font-bold text-indigo-900">${Object.keys(weeklyHoursBySubject).length}</span>
-                        </div>
-                        <div class="p-3 bg-white/80 backdrop-blur rounded-xl border border-indigo-100/50">
-                            <span class="text-[11px] font-medium text-slate-500 block mb-1">Tareas / Actividades Pendientes</span>
-                            <span class="text-lg font-bold text-indigo-900">${(state.tasks || []).filter(t => !t.completed).length}</span>
-                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${subjectsHtml || '<p class="text-xs text-slate-500">No hay materias registradas.</p>'}
                     </div>
                 </div>
             `;
@@ -1159,80 +1173,50 @@ class VisariApp {
 
     // ... acá continúa el resto de tu código de renderDashboard (como el listado de materias de la línea 1112) ...
     // 4 Main Segments Previews
-    this.renderDashboardSegments(state, metrics);
+
   }
 
-  renderDashboardSegments(state, metrics) {
-    // 1. Materias Preview List
-    const materiasContainer = document.getElementById('dash-segment-materias');
-    if (materiasContainer) {
-      if (state.subjects.length === 0) {
-        materiasContainer.innerHTML = `<p class="text-sm text-slate-500 py-4">No hay materias registradas. ¡Agrega una para comenzar!</p>`;
-      } else {
-        materiasContainer.innerHTML = state.subjects.slice(0, 3).map(sub => {
-          const prog = this.store.getSubjectProgress(sub);
-          const completedCount = sub.tasks.filter(t => t.completed).length;
-          return `
-            <div class="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl transition border border-slate-200/60 cursor-pointer" onclick="window.visariApp.navigateTo('materia-detail', '${sub.id}')">
-              <div class="flex items-center gap-3">
-                <span class="w-3 h-3 rounded-full" style="background-color: ${sub.accent || '#8B5CF6'}"></span>
-                <div>
-                  <h4 class="text-sm font-semibold text-slate-900">${sub.name}</h4>
-                  <p class="text-xs text-slate-500">${sub.code} • ${completedCount}/${sub.tasks.length} actividades</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3">
-                <div class="w-20 bg-slate-200 rounded-full h-2 overflow-hidden">
-                  <div class="h-full bg-violet-600 rounded-full transition-all duration-500" style="width: ${prog}%"></div>
-                </div>
-                <span class="text-xs font-bold text-slate-700 w-8 text-right">${prog}%</span>
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-    }
 
-    // 2. Cronómetro Botón B Widget
-    const timerWidgetBtn = document.getElementById('dash-segment-timer-btn');
-    const timerStatusLabel = document.getElementById('dash-timer-status-label');
-    if (timerWidgetBtn && timerStatusLabel) {
-      if (this.store.timer.isRunning) {
-        timerStatusLabel.textContent = `En curso: ${this.formatSeconds(this.store.timer.seconds)}`;
-        timerWidgetBtn.innerHTML = `
+  // 2. Cronómetro Botón B Widget
+  const timerWidgetBtn = document.getElementById('dash-segment-timer-btn');
+  const timerStatusLabel = document.getElementById('dash-timer-status-label');
+  if(timerWidgetBtn && timerStatusLabel) {
+  if (this.store.timer.isRunning) {
+    timerStatusLabel.textContent = `En curso: ${this.formatSeconds(this.store.timer.seconds)}`;
+    timerWidgetBtn.innerHTML = `
           <span class="flex items-center gap-2 text-rose-500 font-semibold">
             <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
             Detener & Asignar
           </span>
         `;
-        timerWidgetBtn.onclick = () => {
-          this.navigateTo('timer');
-          this.stopTimerPrompt();
-        };
-      } else {
-        timerStatusLabel.textContent = "Listo para una nueva sesión";
-        timerWidgetBtn.innerHTML = `
+    timerWidgetBtn.onclick = () => {
+      this.navigateTo('timer');
+      this.stopTimerPrompt();
+    };
+  } else {
+    timerStatusLabel.textContent = "Listo para una nueva sesión";
+    timerWidgetBtn.innerHTML = `
           <span class="flex items-center gap-2 text-violet-600 font-semibold">
             ⚡ Iniciar Cronómetro
           </span>
         `;
-        timerWidgetBtn.onclick = () => {
-          this.navigateTo('timer');
-        };
-      }
-    }
+    timerWidgetBtn.onclick = () => {
+      this.navigateTo('timer');
+    };
+  }
+}
 
-    // 3. Calendario Preview (Next upcoming milestones)
-    const calContainer = document.getElementById('dash-segment-calendar');
-    if (calContainer) {
-      if (metrics.upcomingExams.length === 0) {
-        calContainer.innerHTML = `<p class="text-sm text-slate-500 py-3">No hay exámenes ni entregas urgentes próximas.</p>`;
-      } else {
-        calContainer.innerHTML = metrics.upcomingExams.slice(0, 3).map(exam => {
-          const typeBadge = exam.type === 'parcial'
-            ? '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">PARCIAL</span>'
-            : '<span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">FINAL</span>';
-          return `
+// 3. Calendario Preview (Next upcoming milestones)
+const calContainer = document.getElementById('dash-segment-calendar');
+if (calContainer) {
+  if (metrics.upcomingExams.length === 0) {
+    calContainer.innerHTML = `<p class="text-sm text-slate-500 py-3">No hay exámenes ni entregas urgentes próximas.</p>`;
+  } else {
+    calContainer.innerHTML = metrics.upcomingExams.slice(0, 3).map(exam => {
+      const typeBadge = exam.type === 'parcial'
+        ? '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">PARCIAL</span>'
+        : '<span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">FINAL</span>';
+      return `
             <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm">
               <div class="flex items-center gap-2.5">
                 <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${exam.subjectColor}"></div>
@@ -1249,18 +1233,18 @@ class VisariApp {
               </div>
             </div>
           `;
-        }).join('');
-      }
-    }
+    }).join('');
+  }
+}
 
-    // 4. Team Preview
-    const teamContainer = document.getElementById('dash-segment-team');
-    if (teamContainer) {
-      const activeTasks = state.team.tasks.filter(t => t.status !== 'done');
-      const doneCount = state.team.tasks.filter(t => t.status === 'done').length;
-      const teamProg = state.team.tasks.length > 0 ? Math.round((doneCount / state.team.tasks.length) * 100) : 0;
+// 4. Team Preview
+const teamContainer = document.getElementById('dash-segment-team');
+if (teamContainer) {
+  const activeTasks = state.team.tasks.filter(t => t.status !== 'done');
+  const doneCount = state.team.tasks.filter(t => t.status === 'done').length;
+  const teamProg = state.team.tasks.length > 0 ? Math.round((doneCount / state.team.tasks.length) * 100) : 0;
 
-      teamContainer.innerHTML = `
+  teamContainer.innerHTML = `
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-slate-500">Progreso del sprint grupal</span>
@@ -1281,18 +1265,18 @@ class VisariApp {
           </div>
         </div>
       `;
-    }
+}
   }
 
-  // ==========================================
-  // VIEW 4: MATERIAS (OVERVIEW & DETAIL)
-  // ==========================================
-  renderMaterias(state) {
-    const grid = document.getElementById('materias-grid');
-    if (!grid) return;
+// ==========================================
+// VIEW 4: MATERIAS (OVERVIEW & DETAIL)
+// ==========================================
+renderMaterias(state) {
+  const grid = document.getElementById('materias-grid');
+  if (!grid) return;
 
-    if (state.subjects.length === 0) {
-      grid.innerHTML = `
+  if (state.subjects.length === 0) {
+    grid.innerHTML = `
         <div class="col-span-full py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300">
           <p class="text-slate-500 font-medium">No has registrado materias aún.</p>
           <button class="mt-4 px-4 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition" onclick="window.visariApp.openNewSubjectModal()">
@@ -1300,18 +1284,18 @@ class VisariApp {
           </button>
         </div>
       `;
-      return;
-    }
+    return;
+  }
 
-    grid.innerHTML = state.subjects.map(subject => {
-      const progress = this.store.getSubjectProgress(subject);
-      const totalTasks = subject.tasks.length;
-      const completedTasks = subject.tasks.filter(t => t.completed).length;
-      const hours = Math.floor(subject.studyMinutes / 60);
-      const mins = subject.studyMinutes % 60;
-      const studyTimeStr = `${hours}h ${mins > 0 ? mins + 'm' : ''}`;
+  grid.innerHTML = state.subjects.map(subject => {
+    const progress = this.store.getSubjectProgress(subject);
+    const totalTasks = subject.tasks.length;
+    const completedTasks = subject.tasks.filter(t => t.completed).length;
+    const hours = Math.floor(subject.studyMinutes / 60);
+    const mins = subject.studyMinutes % 60;
+    const studyTimeStr = `${hours}h ${mins > 0 ? mins + 'm' : ''}`;
 
-      return `
+    return `
         <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
           <div>
             <div class="flex items-start justify-between mb-4">
@@ -1356,48 +1340,48 @@ class VisariApp {
           </div>
         </div>
       `;
-    }).join('');
+  }).join('');
+}
+
+renderMateriaDetail(state) {
+  const subject = state.subjects.find(s => s.id === this.selectedSubjectDetail);
+  if (!subject) {
+    this.navigateTo('materias');
+    return;
   }
 
-  renderMateriaDetail(state) {
-    const subject = state.subjects.find(s => s.id === this.selectedSubjectDetail);
-    if (!subject) {
-      this.navigateTo('materias');
-      return;
-    }
+  const progress = this.store.getSubjectProgress(subject);
+  const completedTasks = subject.tasks.filter(t => t.completed).length;
+  const hours = Math.floor(subject.studyMinutes / 60);
+  const mins = subject.studyMinutes % 60;
 
-    const progress = this.store.getSubjectProgress(subject);
-    const completedTasks = subject.tasks.filter(t => t.completed).length;
-    const hours = Math.floor(subject.studyMinutes / 60);
-    const mins = subject.studyMinutes % 60;
+  // Header info
+  document.getElementById('materia-detail-code').textContent = subject.code;
+  document.getElementById('materia-detail-name').textContent = subject.name;
+  document.getElementById('materia-detail-prof').textContent = `Profesor: ${subject.professor} • ${subject.credits} Créditos`;
+  document.getElementById('materia-detail-hours').textContent = `${hours}h ${mins > 0 ? mins + 'm' : ''}`;
+  document.getElementById('materia-detail-progress-num').textContent = `${progress}%`;
+  document.getElementById('materia-detail-progress-bar').style.width = `${progress}%`;
+  document.getElementById('materia-detail-ratio').textContent = `${completedTasks} de ${subject.tasks.length} actividades completadas`;
 
-    // Header info
-    document.getElementById('materia-detail-code').textContent = subject.code;
-    document.getElementById('materia-detail-name').textContent = subject.name;
-    document.getElementById('materia-detail-prof').textContent = `Profesor: ${subject.professor} • ${subject.credits} Créditos`;
-    document.getElementById('materia-detail-hours').textContent = `${hours}h ${mins > 0 ? mins + 'm' : ''}`;
-    document.getElementById('materia-detail-progress-num').textContent = `${progress}%`;
-    document.getElementById('materia-detail-progress-bar').style.width = `${progress}%`;
-    document.getElementById('materia-detail-ratio').textContent = `${completedTasks} de ${subject.tasks.length} actividades completadas`;
+  // Tasks list
+  const tasksContainer = document.getElementById('materia-detail-tasks');
+  if (tasksContainer) {
+    if (subject.tasks.length === 0) {
+      tasksContainer.innerHTML = `<p class="text-sm text-slate-400 py-6 text-center">No hay actividades creadas para esta materia aún.</p>`;
+    } else {
+      tasksContainer.innerHTML = subject.tasks.map(task => {
+        const typeLabels = {
+          tarea: { text: "Tarea", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+          entrega: { text: "Entrega TP", cls: "bg-purple-50 text-purple-700 border-purple-200" },
+          foro: { text: "Foro / Debate", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+          lectura: { text: "📖 Lectura Diaria", cls: "bg-teal-50 text-teal-800 border-teal-300 font-bold" },
+          parcial: { text: "Examen Parcial", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+          final: { text: "Examen Final", cls: "bg-rose-50 text-rose-700 border-rose-200" }
+        };
+        const badge = typeLabels[task.type] || typeLabels.tarea;
 
-    // Tasks list
-    const tasksContainer = document.getElementById('materia-detail-tasks');
-    if (tasksContainer) {
-      if (subject.tasks.length === 0) {
-        tasksContainer.innerHTML = `<p class="text-sm text-slate-400 py-6 text-center">No hay actividades creadas para esta materia aún.</p>`;
-      } else {
-        tasksContainer.innerHTML = subject.tasks.map(task => {
-          const typeLabels = {
-            tarea: { text: "Tarea", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-            entrega: { text: "Entrega TP", cls: "bg-purple-50 text-purple-700 border-purple-200" },
-            foro: { text: "Foro / Debate", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-            lectura: { text: "📖 Lectura Diaria", cls: "bg-teal-50 text-teal-800 border-teal-300 font-bold" },
-            parcial: { text: "Examen Parcial", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-            final: { text: "Examen Final", cls: "bg-rose-50 text-rose-700 border-rose-200" }
-          };
-          const badge = typeLabels[task.type] || typeLabels.tarea;
-
-          return `
+        return `
             <div class="flex items-center justify-between p-3.5 bg-white hover:bg-slate-50/80 rounded-xl border border-slate-200/80 transition group ${task.completed ? 'opacity-70 bg-slate-50/50' : ''}">
               <div class="flex items-center gap-3.5">
                 <input 
@@ -1425,262 +1409,262 @@ class VisariApp {
               </button>
             </div>
           `;
-        }).join('');
-      }
+      }).join('');
+    }
+  }
+}
+
+openNewSubjectModal() {
+  const modal = document.getElementById('modal-new-subject');
+  if (modal) modal.classList.remove('hidden');
+}
+
+closeNewSubjectModal() {
+  const modal = document.getElementById('modal-new-subject');
+  if (modal) modal.classList.add('hidden');
+}
+
+openNewTaskModal() {
+  const modal = document.getElementById('modal-new-task');
+  if (modal) modal.classList.remove('hidden');
+}
+
+closeNewTaskModal() {
+  const modal = document.getElementById('modal-new-task');
+  if (modal) modal.classList.add('hidden');
+}
+
+confirmDeleteSubject(subjectId) {
+  if (confirm("¿Estás seguro de que deseas eliminar esta materia? Esta acción recalculará todo el avance del Dashboard.")) {
+    this.store.deleteSubject(subjectId);
+  }
+}
+
+// ==========================================
+// VIEW 5: CRONÓMETRO / "BOTÓN B"
+// ==========================================
+renderTimerView(state) {
+  const timer = this.store.timer;
+  const timeDisplay = document.getElementById('main-timer-display');
+  const startBtn = document.getElementById('timer-start-btn');
+  const pauseBtn = document.getElementById('timer-pause-btn');
+  const stopBtn = document.getElementById('timer-stop-btn');
+  const timerCircle = document.getElementById('timer-container-circle');
+
+  if (timeDisplay) timeDisplay.textContent = this.formatSeconds(timer.seconds);
+
+  if (timerCircle) {
+    if (timer.isRunning) {
+      timerCircle.classList.add('timer-running-glow', 'border-violet-500');
+      timerCircle.classList.remove('border-slate-200');
+    } else {
+      timerCircle.classList.remove('timer-running-glow', 'border-violet-500');
+      timerCircle.classList.add('border-slate-200');
     }
   }
 
-  openNewSubjectModal() {
-    const modal = document.getElementById('modal-new-subject');
-    if (modal) modal.classList.remove('hidden');
-  }
-
-  closeNewSubjectModal() {
-    const modal = document.getElementById('modal-new-subject');
-    if (modal) modal.classList.add('hidden');
-  }
-
-  openNewTaskModal() {
-    const modal = document.getElementById('modal-new-task');
-    if (modal) modal.classList.remove('hidden');
-  }
-
-  closeNewTaskModal() {
-    const modal = document.getElementById('modal-new-task');
-    if (modal) modal.classList.add('hidden');
-  }
-
-  confirmDeleteSubject(subjectId) {
-    if (confirm("¿Estás seguro de que deseas eliminar esta materia? Esta acción recalculará todo el avance del Dashboard.")) {
-      this.store.deleteSubject(subjectId);
-    }
-  }
-
-  // ==========================================
-  // VIEW 5: CRONÓMETRO / "BOTÓN B"
-  // ==========================================
-  renderTimerView(state) {
-    const timer = this.store.timer;
-    const timeDisplay = document.getElementById('main-timer-display');
-    const startBtn = document.getElementById('timer-start-btn');
-    const pauseBtn = document.getElementById('timer-pause-btn');
-    const stopBtn = document.getElementById('timer-stop-btn');
-    const timerCircle = document.getElementById('timer-container-circle');
-
-    if (timeDisplay) timeDisplay.textContent = this.formatSeconds(timer.seconds);
-
-    if (timerCircle) {
-      if (timer.isRunning) {
-        timerCircle.classList.add('timer-running-glow', 'border-violet-500');
-        timerCircle.classList.remove('border-slate-200');
+  if (startBtn && pauseBtn && stopBtn) {
+    if (timer.isRunning) {
+      startBtn.classList.add('hidden');
+      pauseBtn.classList.remove('hidden');
+      stopBtn.removeAttribute('disabled');
+      stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+      startBtn.classList.remove('hidden');
+      pauseBtn.classList.add('hidden');
+      if (timer.seconds === 0) {
+        stopBtn.setAttribute('disabled', 'true');
+        stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
       } else {
-        timerCircle.classList.remove('timer-running-glow', 'border-violet-500');
-        timerCircle.classList.add('border-slate-200');
-      }
-    }
-
-    if (startBtn && pauseBtn && stopBtn) {
-      if (timer.isRunning) {
-        startBtn.classList.add('hidden');
-        pauseBtn.classList.remove('hidden');
         stopBtn.removeAttribute('disabled');
         stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-      } else {
-        startBtn.classList.remove('hidden');
-        pauseBtn.classList.add('hidden');
-        if (timer.seconds === 0) {
-          stopBtn.setAttribute('disabled', 'true');
-          stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-          stopBtn.removeAttribute('disabled');
-          stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
       }
     }
+  }
 
-    // Populate subject selector dropdown
-    const subSelect = document.getElementById('timer-subject-select');
-    if (subSelect) {
-      subSelect.innerHTML = `<option value="">-- Elige una materia --</option>` + state.subjects.map(s => `
+  // Populate subject selector dropdown
+  const subSelect = document.getElementById('timer-subject-select');
+  if (subSelect) {
+    subSelect.innerHTML = `<option value="">-- Elige una materia --</option>` + state.subjects.map(s => `
         <option value="${s.id}">${s.name} (${s.code})</option>
       `).join('');
-    }
+  }
+}
+
+startTimer() {
+  if (this.store.timer.isRunning) return;
+  this.store.timer.isRunning = true;
+
+  this.timerTicker = setInterval(() => {
+    this.store.timer.seconds++;
+    const timeDisplay = document.getElementById('main-timer-display');
+    if (timeDisplay) timeDisplay.textContent = this.formatSeconds(this.store.timer.seconds);
+
+    const topDisplay = document.getElementById('topbar-timer-display');
+    if (topDisplay) topDisplay.textContent = this.formatSeconds(this.store.timer.seconds);
+  }, 1000);
+
+  this.render();
+}
+
+pauseTimer() {
+  this.store.timer.isRunning = false;
+  clearInterval(this.timerTicker);
+  this.render();
+}
+
+resetTimer() {
+  this.pauseTimer();
+  this.store.timer.seconds = 0;
+  this.render();
+}
+
+stopTimerPrompt() {
+  this.pauseTimer();
+  if (this.store.timer.seconds < 1) {
+    this.store.showToast("Inicia el cronómetro antes de asignar tiempo.");
+    return;
   }
 
-  startTimer() {
-    if (this.store.timer.isRunning) return;
-    this.store.timer.isRunning = true;
-
-    this.timerTicker = setInterval(() => {
-      this.store.timer.seconds++;
-      const timeDisplay = document.getElementById('main-timer-display');
-      if (timeDisplay) timeDisplay.textContent = this.formatSeconds(this.store.timer.seconds);
-
-      const topDisplay = document.getElementById('topbar-timer-display');
-      if (topDisplay) topDisplay.textContent = this.formatSeconds(this.store.timer.seconds);
-    }, 1000);
-
-    this.render();
+  // Populate stop modal
+  const modal = document.getElementById('modal-assign-study-time');
+  const minsRecorded = Math.max(1, Math.round(this.store.timer.seconds / 60));
+  const timeSummary = document.getElementById('assign-time-summary');
+  if (timeSummary) {
+    timeSummary.textContent = `${this.formatSeconds(this.store.timer.seconds)} (~${minsRecorded} min)`;
   }
 
-  pauseTimer() {
-    this.store.timer.isRunning = false;
-    clearInterval(this.timerTicker);
-    this.render();
-  }
-
-  resetTimer() {
-    this.pauseTimer();
-    this.store.timer.seconds = 0;
-    this.render();
-  }
-
-  stopTimerPrompt() {
-    this.pauseTimer();
-    if (this.store.timer.seconds < 1) {
-      this.store.showToast("Inicia el cronómetro antes de asignar tiempo.");
-      return;
-    }
-
-    // Populate stop modal
-    const modal = document.getElementById('modal-assign-study-time');
-    const minsRecorded = Math.max(1, Math.round(this.store.timer.seconds / 60));
-    const timeSummary = document.getElementById('assign-time-summary');
-    if (timeSummary) {
-      timeSummary.textContent = `${this.formatSeconds(this.store.timer.seconds)} (~${minsRecorded} min)`;
-    }
-
-    const selectEl = document.getElementById('assign-subject-select');
-    if (selectEl) {
-      selectEl.innerHTML = this.store.state.subjects.map(s => `
+  const selectEl = document.getElementById('assign-subject-select');
+  if (selectEl) {
+    selectEl.innerHTML = this.store.state.subjects.map(s => `
         <option value="${s.id}">${s.name} (${s.code})</option>
       `).join('');
-    }
-
-    if (modal) modal.classList.remove('hidden');
   }
 
-  confirmAssignStudyTime() {
-    const selectEl = document.getElementById('assign-subject-select');
-    const subjectId = selectEl.value;
-    const minsRecorded = Math.max(1, Math.round(this.store.timer.seconds / 60));
+  if (modal) modal.classList.remove('hidden');
+}
 
-    if (!subjectId) {
-      alert("Por favor selecciona una materia");
-      return;
-    }
+confirmAssignStudyTime() {
+  const selectEl = document.getElementById('assign-subject-select');
+  const subjectId = selectEl.value;
+  const minsRecorded = Math.max(1, Math.round(this.store.timer.seconds / 60));
 
-    this.store.addStudyTime(subjectId, minsRecorded);
-    this.store.triggerConfetti();
-
-    // Reset timer
-    this.store.timer.seconds = 0;
-    this.store.timer.isRunning = false;
-
-    // Close modal
-    const modal = document.getElementById('modal-assign-study-time');
-    if (modal) modal.classList.add('hidden');
-
-    this.render();
+  if (!subjectId) {
+    alert("Por favor selecciona una materia");
+    return;
   }
 
-  formatSeconds(totalSecs) {
-    const hrs = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
+  this.store.addStudyTime(subjectId, minsRecorded);
+  this.store.triggerConfetti();
 
-  // ==========================================
-  // VIEW 6: CALENDARIO
-  // ==========================================
-  renderCalendar(state) {
-    const year = this.currentCalendarDate.getFullYear();
-    const month = this.currentCalendarDate.getMonth();
+  // Reset timer
+  this.store.timer.seconds = 0;
+  this.store.timer.isRunning = false;
 
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    const monthLabel = document.getElementById('calendar-month-label');
-    if (monthLabel) monthLabel.textContent = `${monthNames[month]} ${year}`;
+  // Close modal
+  const modal = document.getElementById('modal-assign-study-time');
+  if (modal) modal.classList.add('hidden');
 
-    // Collect all events from subjects
-    const allEvents = [];
-    state.subjects.forEach(sub => {
-      (sub.tasks || []).forEach(task => {
-        allEvents.push({
-          ...task,
-          subjectName: sub.name,
-          subjectCode: sub.code,
-          subjectColor: sub.accent || '#8B5CF6'
-        });
+  this.render();
+}
+
+formatSeconds(totalSecs) {
+  const hrs = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// ==========================================
+// VIEW 6: CALENDARIO
+// ==========================================
+renderCalendar(state) {
+  const year = this.currentCalendarDate.getFullYear();
+  const month = this.currentCalendarDate.getMonth();
+
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const monthLabel = document.getElementById('calendar-month-label');
+  if (monthLabel) monthLabel.textContent = `${monthNames[month]} ${year}`;
+
+  // Collect all events from subjects
+  const allEvents = [];
+  state.subjects.forEach(sub => {
+    (sub.tasks || []).forEach(task => {
+      allEvents.push({
+        ...task,
+        subjectName: sub.name,
+        subjectCode: sub.code,
+        subjectColor: sub.accent || '#8B5CF6'
       });
     });
+  });
 
-    // Calendar Grid Days
-    const gridEl = document.getElementById('calendar-days-grid');
-    if (!gridEl) return;
+  // Calendar Grid Days
+  const gridEl = document.getElementById('calendar-days-grid');
+  if (!gridEl) return;
 
-    gridEl.innerHTML = '';
+  gridEl.innerHTML = '';
 
-    const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
-    // Adjust so Monday is 0
-    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
+  // Adjust so Monday is 0
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Empty offset cells
-    for (let i = 0; i < startOffset; i++) {
-      const emptyCell = document.createElement('div');
-      emptyCell.className = 'h-24 bg-slate-50/50 rounded-xl border border-dashed border-slate-200/50';
-      gridEl.appendChild(emptyCell);
-    }
+  // Empty offset cells
+  for (let i = 0; i < startOffset; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'h-24 bg-slate-50/50 rounded-xl border border-dashed border-slate-200/50';
+    gridEl.appendChild(emptyCell);
+  }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toISOString().split('T')[0];
 
-    // Day cells
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-      const isToday = dateStr === todayStr;
+  // Day cells
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    const isToday = dateStr === todayStr;
 
-      const dayEvents = allEvents.filter(e => e.dueDate === dateStr);
+    const dayEvents = allEvents.filter(e => e.dueDate === dateStr);
 
-      const cell = document.createElement('div');
-      cell.className = `h-28 p-2 rounded-xl border transition-all flex flex-col justify-between cursor-pointer ${isToday
-        ? 'bg-violet-50/60 border-violet-400 ring-2 ring-violet-400/20'
-        : 'bg-white border-slate-200/80 hover:border-violet-300 hover:shadow-sm'
-        }`;
+    const cell = document.createElement('div');
+    cell.className = `h-28 p-2 rounded-xl border transition-all flex flex-col justify-between cursor-pointer ${isToday
+      ? 'bg-violet-50/60 border-violet-400 ring-2 ring-violet-400/20'
+      : 'bg-white border-slate-200/80 hover:border-violet-300 hover:shadow-sm'
+      }`;
 
-      cell.innerHTML = `
+    cell.innerHTML = `
         <div class="flex items-center justify-between">
           <span class="text-xs font-bold ${isToday ? 'text-violet-700 bg-violet-200/70 w-5 h-5 flex items-center justify-center rounded-full' : 'text-slate-700'}">${day}</span>
           ${dayEvents.length > 0 ? `<span class="text-[10px] font-bold text-violet-600 bg-violet-100 px-1.5 py-0.2 rounded-full">${dayEvents.length}</span>` : ''}
         </div>
         <div class="space-y-1 overflow-hidden flex-1 mt-1">
           ${dayEvents.slice(0, 2).map(ev => {
-        const isExam = ev.type === 'parcial' || ev.type === 'final';
-        const isLectura = ev.type === 'lectura';
-        const pillCls = isExam
-          ? 'bg-amber-100 text-amber-900 font-semibold'
-          : isLectura
-            ? 'bg-teal-100 text-teal-900 font-semibold border border-teal-200'
-            : 'bg-slate-100 text-slate-700';
-        return `
+      const isExam = ev.type === 'parcial' || ev.type === 'final';
+      const isLectura = ev.type === 'lectura';
+      const pillCls = isExam
+        ? 'bg-amber-100 text-amber-900 font-semibold'
+        : isLectura
+          ? 'bg-teal-100 text-teal-900 font-semibold border border-teal-200'
+          : 'bg-slate-100 text-slate-700';
+      return `
               <div class="text-[10px] px-1.5 py-0.5 rounded truncate font-medium ${pillCls}" title="${ev.title} (${ev.subjectCode})">
                 ${isLectura ? '📖 ' : ''}${ev.title}
               </div>
             `;
-      }).join('')}
+    }).join('')}
           ${dayEvents.length > 2 ? `<div class="text-[9px] text-slate-400 font-medium">+${dayEvents.length - 2} más</div>` : ''}
         </div>
       `;
 
-      cell.onclick = () => this.showCalendarDayEvents(dateStr, dayEvents);
-      gridEl.appendChild(cell);
-    }
+    cell.onclick = () => this.showCalendarDayEvents(dateStr, dayEvents);
+    gridEl.appendChild(cell);
+  }
 
-    // Side list: upcoming 5 events
-    const upcomingList = document.getElementById('calendar-upcoming-list');
-    if (upcomingList) {
-      const sortedEvents = [...allEvents].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-      upcomingList.innerHTML = sortedEvents.slice(0, 5).map(ev => `
+  // Side list: upcoming 5 events
+  const upcomingList = document.getElementById('calendar-upcoming-list');
+  if (upcomingList) {
+    const sortedEvents = [...allEvents].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    upcomingList.innerHTML = sortedEvents.slice(0, 5).map(ev => `
         <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${ev.subjectColor}"></span>
@@ -1694,22 +1678,22 @@ class VisariApp {
           </span>
         </div>
       `).join('');
-    }
   }
+}
 
-  showCalendarDayEvents(dateStr, events) {
-    const detailBox = document.getElementById('calendar-day-detail-box');
-    const detailTitle = document.getElementById('calendar-day-detail-title');
-    const detailContent = document.getElementById('calendar-day-detail-content');
+showCalendarDayEvents(dateStr, events) {
+  const detailBox = document.getElementById('calendar-day-detail-box');
+  const detailTitle = document.getElementById('calendar-day-detail-title');
+  const detailContent = document.getElementById('calendar-day-detail-content');
 
-    if (!detailBox) return;
-    detailBox.classList.remove('hidden');
-    detailTitle.textContent = `Eventos para el ${dateStr}`;
+  if (!detailBox) return;
+  detailBox.classList.remove('hidden');
+  detailTitle.textContent = `Eventos para el ${dateStr}`;
 
-    if (events.length === 0) {
-      detailContent.innerHTML = `<p class="text-xs text-slate-400 py-3">No hay actividades programadas para este día.</p>`;
-    } else {
-      detailContent.innerHTML = events.map(ev => `
+  if (events.length === 0) {
+    detailContent.innerHTML = `<p class="text-xs text-slate-400 py-3">No hay actividades programadas para este día.</p>`;
+  } else {
+    detailContent.innerHTML = events.map(ev => `
         <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
           <div>
             <p class="text-xs font-bold text-slate-800">${ev.title}</p>
@@ -1720,18 +1704,18 @@ class VisariApp {
           </span>
         </div>
       `).join('');
-    }
   }
+}
 
-  prevMonth() {
-    this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() - 1);
-    this.render();
-  }
+prevMonth() {
+  this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() - 1);
+  this.render();
+}
 
-  nextMonth() {
-    this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + 1);
-    this.render();
-  }
+nextMonth() {
+  this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + 1);
+  this.render();
+}
 
   // =====================================
   // VIEW 7: TRABAJO EN EQUIPO
@@ -1739,97 +1723,97 @@ class VisariApp {
 
   // 1. Método para sumar compañero por email
   async addTeamMemberPrompt() {
-    const email = prompt("Ingresá el correo electrónico registrado de tu compañero:");
-    if (!email) return;
+  const email = prompt("Ingresá el correo electrónico registrado de tu compañero:");
+  if (!email) return;
 
-    try {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("email", "==", email.trim().toLowerCase()));
-      const querySnapshot = await getDocs(q);
+  try {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("email", "==", email.trim().toLowerCase()));
+    const querySnapshot = await getDocs(q);
 
-      if (querySnapshot.empty) {
-        alert("El usuario aún no está registrado en VISARi.");
-        return;
-      }
-
-      let memberData = null;
-      querySnapshot.forEach((doc) => {
-        memberData = doc.data();
-      });
-
-      if (!this.store.state.team) {
-        this.store.state.team = { members: [], tasks: [] };
-      }
-
-      if (this.store.state.team.members.some(m => m.email === memberData.email)) {
-        alert("Este compañero ya forma parte de tu equipo.");
-        return;
-      }
-
-      this.store.state.team.members.push({
-        name: memberData.name || "Compañero",
-        email: memberData.email,
-        role: memberData.career || "Colaborador",
-        avatar: memberData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberData.name)}`
-      });
-
-      this.store.saveState();
-      this.renderTeam(this.store.state);
-      alert(`¡${memberData.name} fue agregado con éxito!`);
-
-    } catch (error) {
-      console.error("Error al buscar compañero:", error);
-      alert("Ocurrió un error al verificar el correo.");
+    if (querySnapshot.empty) {
+      alert("El usuario aún no está registrado en VISARi.");
+      return;
     }
-  }
 
-  // 2. Asignar nueva tarea grupal
-  openNewTeamTaskModal() {
-    const title = prompt("Título de la tarea o actividad:");
-    if (!title) return;
-
-    const subjectList = this.store.state.subjects.map(s => s.name).join("\n - ");
-    const subject = prompt(`¿A qué materia corresponde?\nDisponibles:\n - ${subjectList}`);
-    if (!subject) return;
+    let memberData = null;
+    querySnapshot.forEach((doc) => {
+      memberData = doc.data();
+    });
 
     if (!this.store.state.team) {
       this.store.state.team = { members: [], tasks: [] };
     }
 
-    const newTask = {
-      id: Date.now().toString(),
-      title: title,
-      subject: subject,
-      status: 'todo',
-      assignedTo: this.store.state.user.name
-    };
+    if (this.store.state.team.members.some(m => m.email === memberData.email)) {
+      alert("Este compañero ya forma parte de tu equipo.");
+      return;
+    }
 
-    this.store.state.team.tasks.push(newTask);
+    this.store.state.team.members.push({
+      name: memberData.name || "Compañero",
+      email: memberData.email,
+      role: memberData.career || "Colaborador",
+      avatar: memberData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberData.name)}`
+    });
+
+    this.store.saveState();
+    this.renderTeam(this.store.state);
+    alert(`¡${memberData.name} fue agregado con éxito!`);
+
+  } catch (error) {
+    console.error("Error al buscar compañero:", error);
+    alert("Ocurrió un error al verificar el correo.");
+  }
+}
+
+// 2. Asignar nueva tarea grupal
+openNewTeamTaskModal() {
+  const title = prompt("Título de la tarea o actividad:");
+  if (!title) return;
+
+  const subjectList = this.store.state.subjects.map(s => s.name).join("\n - ");
+  const subject = prompt(`¿A qué materia corresponde?\nDisponibles:\n - ${subjectList}`);
+  if (!subject) return;
+
+  if (!this.store.state.team) {
+    this.store.state.team = { members: [], tasks: [] };
+  }
+
+  const newTask = {
+    id: Date.now().toString(),
+    title: title,
+    subject: subject,
+    status: 'todo',
+    assignedTo: this.store.state.user.name
+  };
+
+  this.store.state.team.tasks.push(newTask);
+  this.store.saveState();
+  this.renderTeam(this.store.state);
+}
+// 3. Mover tareas en el tablero Kanban
+moveTeamTask(taskId, newStatus) {
+  const tasks = this.store.state.team.tasks || [];
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    task.status = newStatus;
     this.store.saveState();
     this.renderTeam(this.store.state);
   }
-  // 3. Mover tareas en el tablero Kanban
-  moveTeamTask(taskId, newStatus) {
-    const tasks = this.store.state.team.tasks || [];
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      task.status = newStatus;
-      this.store.saveState();
-      this.renderTeam(this.store.state);
-    }
-  }
-  // Método para renderizar la vista de equipo y tablero Kanban
-  renderTeam(state) {
-    if (!state || !state.team) return;
-    const team = state.team;
+}
+// Método para renderizar la vista de equipo y tablero Kanban
+renderTeam(state) {
+  if (!state || !state.team) return;
+  const team = state.team;
 
-    const projectTitle = document.getElementById('team-project-title');
-    if (projectTitle) projectTitle.textContent = team.projectName || "Proyecto Grupal";
+  const projectTitle = document.getElementById('team-project-title');
+  if (projectTitle) projectTitle.textContent = team.projectName || "Proyecto Grupal";
 
-    // Team members avatars
-    const membersList = document.getElementById('team-members-list');
-    if (membersList) {
-      membersList.innerHTML = team.members.map(m => `
+  // Team members avatars
+  const membersList = document.getElementById('team-members-list');
+  if (membersList) {
+    membersList.innerHTML = team.members.map(m => `
                 <div class="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-sm">
                     <img src="${m.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-violet-100" />
                     <div>
@@ -1838,26 +1822,26 @@ class VisariApp {
                     </div>
                 </div>
             `).join('');
-    }
+  }
 
-    // Populate Kanban Columns
-    const statuses = ['todo', 'in_progress', 'done'];
-    statuses.forEach(status => {
-      const col = document.getElementById(`kanban-col-${status}`);
-      if (!col) return;
+  // Populate Kanban Columns
+  const statuses = ['todo', 'in_progress', 'done'];
+  statuses.forEach(status => {
+    const col = document.getElementById(`kanban-col-${status}`);
+    if (!col) return;
 
-      const tasks = team.tasks.filter(t => t.status === status);
-      col.innerHTML = tasks.length === 0
-        ? `<div class="p-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">Sin tareas</div>`
-        : tasks.map(task => {
-          const member = team.members.find(m => m.id === task.assigneeId) || { name: 'Sin asignar', avatar: '' };
-          const priorityCls = {
-            alta: 'bg-rose-100 text-rose-700',
-            media: 'bg-amber-100 text-amber-700',
-            baja: 'bg-slate-100 text-slate-700'
-          }[task.priority] || 'bg-slate-100 text-slate-700';
+    const tasks = team.tasks.filter(t => t.status === status);
+    col.innerHTML = tasks.length === 0
+      ? `<div class="p-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">Sin tareas</div>`
+      : tasks.map(task => {
+        const member = team.members.find(m => m.id === task.assigneeId) || { name: 'Sin asignar', avatar: '' };
+        const priorityCls = {
+          alta: 'bg-rose-100 text-rose-700',
+          media: 'bg-amber-100 text-amber-700',
+          baja: 'bg-slate-100 text-slate-700'
+        }[task.priority] || 'bg-slate-100 text-slate-700';
 
-          return `
+        return `
                         <div class="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityCls}">${task.subject || 'General'}</span>
@@ -1868,24 +1852,24 @@ class VisariApp {
                             </div>
                         </div>
                     `;
-        }).join('');
-    });
-  }
-  openNewTeamTaskModal() {
-    const modal = document.getElementById('modal-new-team-task');
-    const selectMember = document.getElementById('team-task-assignee');
-    if (selectMember) {
-      selectMember.innerHTML = this.store.state.team.members.map(m => `
+      }).join('');
+  });
+}
+openNewTeamTaskModal() {
+  const modal = document.getElementById('modal-new-team-task');
+  const selectMember = document.getElementById('team-task-assignee');
+  if (selectMember) {
+    selectMember.innerHTML = this.store.state.team.members.map(m => `
         <option value="${m.id}">${m.name}</option>
       `).join('');
-    }
-    if (modal) modal.classList.remove('hidden');
   }
+  if (modal) modal.classList.remove('hidden');
+}
 
-  closeNewTeamTaskModal() {
-    const modal = document.getElementById('modal-new-team-task');
-    if (modal) modal.classList.add('hidden');
-  }
+closeNewTeamTaskModal() {
+  const modal = document.getElementById('modal-new-team-task');
+  if (modal) modal.classList.add('hidden');
+}
 } // <--- Esta llave cierra la clase VisariApp
 
 // Initialize on DOM ready
