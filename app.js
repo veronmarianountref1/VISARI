@@ -82,8 +82,28 @@ class VisariStore {
   // Actualizar la clave según el usuario autenticado
   setUserData(user) {
     if (user && user.email) {
-      this.storageKey = `visari_state_${user.email.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-      this.state = this.loadState();
+      const userKey = `visari_state_${user.email.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+      this.storageKey = userKey;
+
+      // Migración automática: Rescata tus datos anteriores si tu clave personal está vacía
+      if (!localStorage.getItem(userKey) && localStorage.getItem('visari_state_v1')) {
+        const oldData = localStorage.getItem('visari_state_v1');
+        localStorage.setItem(userKey, oldData);
+      }
+
+      const loaded = this.loadState();
+
+      // Vincular datos básicos del usuario de Google
+      loaded.user.email = user.email;
+      if (user.displayName && (!loaded.user.name || loaded.user.name === "Estudiante")) {
+        loaded.user.name = user.displayName;
+      }
+      if (user.photoURL && !loaded.user.avatar) {
+        loaded.user.avatar = user.photoURL;
+      }
+
+      this.state = loaded;
+      this.saveState();
       this.notify();
     }
   }
